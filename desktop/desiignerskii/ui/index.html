@@ -1,0 +1,2576 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src data:; font-src data:; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'"
+    />
+    <title>Desiignerskii VPN</title>
+    <style>
+      /* __FONT_LICENSE__ */
+      @font-face {
+        font-family: Inter;
+        src: url(data:font/woff2;base64,__INTER__) format("woff2");
+        font-weight: 100 900;
+        font-display: swap;
+      }
+      :root {
+        font:
+          14px/1.45 Inter,
+          "Segoe UI",
+          system-ui,
+          sans-serif;
+        color-scheme: light;
+        --bg: #fff;
+        --ink: #181a19;
+        --muted: #575e5b;
+        --faint: #6a726e;
+        --line: #e2e5e2;
+        --well: #f2f4f0;
+        --selected: #e6f2cf;
+        --accent: #c1ef71;
+        --button: #222622;
+        --onbutton: #fff;
+        --bar: #4d6241;
+        --bar2: #b1cf8f;
+        --focus: #58882f;
+        --error: #a93631;
+        --edge: 24px;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        font-weight: 570;
+      }
+      button:disabled {
+        opacity: 0.44;
+        cursor: default;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 3px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      h1,
+      h2,
+      p,
+      dl,
+      dd {
+        margin: 0;
+      }
+      h1,
+      h2 {
+        font-weight: 600;
+        letter-spacing: -0.05em;
+        line-height: 1.14;
+      }
+      svg {
+        display: block;
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.65;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex: none;
+      }
+      i[data-icon] {
+        display: inline-flex;
+      }
+      .shell {
+        width: 100%;
+        min-height: 100vh;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        isolation: isolate;
+      }
+      .head,
+      .topnav,
+      .pageHead,
+      .statTitle,
+      .serverTools,
+      .device,
+      .detailtop,
+      .dh,
+      .apply,
+      #editbar,
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .head {
+        min-height: 56px;
+        margin: 0 var(--edge);
+        border-bottom: 1px solid var(--line);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 17px;
+        font-weight: 670;
+        letter-spacing: -0.055em;
+      }
+      .brand img {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+      }
+      .brand small {
+        font-size: 9px;
+        letter-spacing: 0;
+      }
+      .head #help {
+        margin-left: auto;
+      }
+      .iconbtn,
+      .smallbtn,
+      .primary,
+      .mode,
+      .plain {
+        border-radius: 8px;
+      }
+      .iconbtn {
+        width: 32px;
+        height: 32px;
+        padding: 6px;
+        color: var(--muted);
+      }
+      .iconbtn svg {
+        width: 16px;
+      }
+      .smallbtn,
+      .primary {
+        padding: 8px 12px;
+        min-height: 35px;
+        font-size: 12px;
+      }
+      .smallbtn {
+        background: var(--well);
+      }
+      .primary {
+        background: var(--button);
+        color: var(--onbutton);
+      }
+      .iconbtn:hover:enabled,
+      .smallbtn:hover:enabled,
+      .mode:hover:enabled,
+      .plain:hover:enabled {
+        background: var(--line);
+      }
+      .primary:hover:enabled {
+        filter: brightness(1.12);
+      }
+      .topnav {
+        order: 5;
+        justify-content: space-around;
+        gap: 2px;
+        padding: 6px 12px;
+        background: var(--bg);
+        border-top: 1px solid var(--line);
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+      }
+      .topnav button {
+        flex: 1;
+        flex-direction: column;
+        gap: 3px;
+        color: var(--faint);
+        font-size: 10px;
+        padding: 5px 3px;
+        border-radius: 7px;
+      }
+      .topnav button svg {
+        width: 17px;
+        height: 17px;
+        order: -1;
+      }
+      .topnav button[aria-current="page"] {
+        color: var(--ink);
+        background: var(--well);
+      }
+      #dashboard {
+        padding: 5px var(--edge) 10px;
+      }
+      .connection {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 3px 13px;
+        padding: 24px 0 21px;
+      }
+      .statusLine {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .statusDot {
+        display: block;
+        width: 8px;
+        height: 8px;
+        flex: none;
+        border-radius: 50%;
+        background: #9ba19d;
+      }
+      .statusLine strong {
+        font-size: clamp(19px, 4vw, 25px);
+        font-weight: 590;
+        letter-spacing: -0.05em;
+        line-height: 1.2;
+      }
+      .connected .statusDot {
+        background: #648b2e;
+      }
+      .modeLine {
+        grid-area: 2/1;
+        color: var(--muted);
+      }
+      .mode {
+        min-height: 28px;
+        padding: 3px 4px;
+        font-size: 11px;
+        font-weight: 470;
+        color: var(--muted);
+        margin-left: -4px;
+      }
+      .mode svg {
+        width: 13px;
+        height: 13px;
+      }
+      .mode i:last-child svg {
+        width: 11px;
+      }
+      .power {
+        grid-area: 1/2/3/3;
+        width: 64px;
+        height: 36px;
+        position: relative;
+        justify-content: flex-start;
+        padding: 3px;
+        background: #dfe3dc;
+        border: 1px solid #d5dacf;
+        border-radius: 22px;
+        color: #52594f;
+      }
+      .power .knob {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: white;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 1px 3px #2223;
+        transition: transform 0.18s ease;
+      }
+      .power .knob svg {
+        width: 14px;
+        height: 14px;
+      }
+      .power #powertext {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+      }
+      .connected .power {
+        background: var(--accent);
+        border-color: #b4d878;
+      }
+      .connected .power .knob {
+        transform: translateX(28px);
+        color: #2f492b;
+      }
+      .power:hover:enabled {
+        border-color: var(--faint);
+      }
+      #first {
+        grid-column: 1/-1;
+        justify-self: start;
+        margin-top: 7px;
+      }
+      .current {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        width: 100%;
+        text-align: left;
+        background: var(--well);
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        padding: 14px 15px;
+        min-height: 79px;
+      }
+      .current:hover:enabled {
+        border-color: var(--faint);
+      }
+      .current > i {
+        margin-left: auto;
+        color: var(--muted);
+      }
+      .current > i svg {
+        width: 15px;
+      }
+      .targetText {
+        display: grid;
+        row-gap: 1px;
+        min-width: 0;
+      }
+      .targetText small {
+        font-size: 10px;
+        font-weight: 520;
+        color: var(--muted);
+      }
+      .targetText b {
+        font-size: 19px;
+        line-height: 1.25;
+        letter-spacing: -0.04em;
+        font-weight: 590;
+        overflow-wrap: anywhere;
+      }
+      .targetText > span {
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 430;
+      }
+      .currentFlag,
+      .flag {
+        width: 32px;
+        height: 32px;
+        display: inline-grid;
+        place-items: center;
+        border-radius: 50%;
+        font:
+          600 11px/1 Inter,
+          sans-serif;
+        background: var(--line);
+        color: var(--muted);
+        flex: none;
+      }
+      .currentFlag[data-known="true"],
+      .flag[data-known="true"] {
+        background: var(--flag-bg);
+        box-shadow: inset 0 0 0 1px #8882;
+      }
+      .currentFlag {
+        width: 39px;
+        height: 39px;
+      }
+      #stats {
+        padding: 22px 0 7px;
+      }
+      .statTitle h2 {
+        font-size: 13px;
+        letter-spacing: -0.012em;
+      }
+      .session {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .session svg {
+        width: 12px;
+        height: 12px;
+      }
+      .trafficBar {
+        display: flex;
+        gap: 3px;
+        margin: 11px 0;
+        height: 6px;
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--well);
+      }
+      .trafficBar b {
+        background: var(--bar);
+        flex: var(--received, 0) 1 0;
+      }
+      .trafficBar i {
+        background: var(--bar2);
+        flex: var(--sent, 0) 1 0;
+      }
+      .counters {
+        display: flex;
+        justify-content: space-between;
+      }
+      .counters > div {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .counters dt,
+      .names small,
+      .latency {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 450;
+      }
+      .counters dt {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .counters dd {
+        font-size: 12px;
+        letter-spacing: -0.015em;
+        font-variant-numeric: tabular-nums;
+      }
+      .downMark,
+      .upMark {
+        width: 6px;
+        height: 6px;
+        background: var(--bar);
+        border-radius: 2px;
+      }
+      .upMark {
+        background: var(--bar2);
+      }
+      .foot {
+        order: 4;
+        margin-top: auto;
+        padding: 15px var(--edge);
+        display: flex;
+        align-items: center;
+        color: var(--faint);
+        font-size: 10px;
+        gap: 8px;
+      }
+      .foot button {
+        font-size: 11px;
+        padding: 3px 0;
+        color: var(--muted);
+      }
+      .version {
+        margin-left: auto;
+      }
+      .demoTag {
+        display: none;
+      }
+      .demo .demoTag {
+        display: inline;
+      }
+      .workspace,
+      #prefs {
+        padding: 21px var(--edge);
+      }
+      .pageHead h1,
+      #prefs > h1 {
+        font-size: 26px;
+      }
+      .pageHead button,
+      .detailtop button,
+      .dh button {
+        margin-left: auto;
+      }
+      .pageHead {
+        margin-bottom: 11px;
+      }
+      .device {
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 8px;
+        min-height: 27px;
+      }
+      .device b {
+        font-weight: 500;
+      }
+      .device i svg {
+        width: 14px;
+      }
+      .device .iconbtn {
+        height: 25px;
+        width: 25px;
+      }
+      .serverTools {
+        padding: 6px 0 10px;
+        gap: 7px;
+        border-bottom: 1px solid var(--line);
+      }
+      .filters {
+        display: flex;
+        gap: 2px;
+        padding: 2px;
+        background: var(--well);
+        border-radius: 7px;
+      }
+      .filters button {
+        font-size: 11px;
+        color: var(--muted);
+        padding: 5px 7px;
+        border-radius: 5px;
+      }
+      .filters button[aria-pressed="true"] {
+        color: var(--ink);
+        background: var(--bg);
+        box-shadow: 0 1px 3px #0001;
+      }
+      .find {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 7px;
+        margin-left: auto;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        color: var(--muted);
+        min-width: 0;
+      }
+      .find svg {
+        width: 13px;
+        height: 13px;
+      }
+      .find input {
+        width: clamp(58px, 15vw, 150px);
+        border: 0;
+        background: transparent;
+        min-width: 0;
+        padding: 2px;
+        font-size: 11px;
+      }
+      .server {
+        display: flex;
+        align-items: stretch;
+        gap: 1px;
+        border-bottom: 1px solid var(--line);
+      }
+      .server:hover {
+        background: var(--well);
+      }
+      .pick {
+        flex: 1;
+        min-width: 0;
+        justify-content: flex-start;
+        text-align: left;
+        padding: 9px 3px;
+        gap: 11px;
+      }
+      .server.sel .pick {
+        color: var(--ink);
+      }
+      .sel .names b:after {
+        content: "";
+        background: var(--focus);
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin: 0 0 2px 7px;
+      }
+      .names {
+        display: grid;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .names b {
+        font-weight: 570;
+        font-size: 13px;
+      }
+      .latency {
+        margin-left: auto;
+        white-space: nowrap;
+      }
+      .star {
+        width: 29px;
+        color: var(--faint);
+      }
+      .star svg {
+        width: 15px;
+      }
+      .star.saved {
+        color: var(--focus);
+      }
+      .star.saved svg {
+        fill: var(--selected);
+      }
+      .zero,
+      .note,
+      .explain {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .zero {
+        padding: 15px 0;
+      }
+      #prefs > h1 {
+        margin-bottom: 16px;
+      }
+      .prefslayout {
+        display: block;
+      }
+      #categories {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 14px;
+      }
+      #categories button {
+        min-height: 29px;
+        border-radius: 7px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 530;
+        padding: 5px 7px;
+      }
+      #categories button[aria-current="page"] {
+        color: var(--ink);
+        background: var(--selected);
+      }
+      #categories svg {
+        width: 14px;
+      }
+      .detail {
+        min-width: 0;
+      }
+      .detailtop h2 {
+        font-size: 20px;
+      }
+      .detailtop {
+        padding-bottom: 7px;
+      }
+      .field {
+        padding: 12px 0;
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .field label {
+        font-size: 12px;
+        font-weight: 550;
+        display: block;
+      }
+      .field small,
+      .note,
+      .explain {
+        display: block;
+        font-size: 11px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      .field small {
+        margin-top: 2px;
+      }
+      .in,
+      select,
+      textarea,
+      .input {
+        min-width: 0;
+        max-width: 100%;
+        font-size: 12px;
+        border: 1px solid var(--line);
+        background: var(--well);
+        border-radius: 7px;
+        padding: 8px 9px;
+      }
+      .field .in {
+        width: clamp(125px, 24vw, 220px);
+      }
+      .field input[type="number"] {
+        width: 72px;
+      }
+      .switch {
+        position: relative;
+        width: 34px;
+        height: 20px;
+        flex: none;
+        border-radius: 13px;
+        background: var(--faint);
+      }
+      .switch:before {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        border-radius: 50%;
+        width: 14px;
+        height: 14px;
+        background: white;
+      }
+      .switch[aria-checked="true"] {
+        background: #5c8037;
+      }
+      .switch[aria-checked="true"]:before {
+        left: 17px;
+      }
+      .field.area {
+        display: block;
+      }
+      .area textarea {
+        display: block;
+        width: 100%;
+        margin-top: 5px;
+        resize: vertical;
+        font:
+          12px/1.5 Consolas,
+          monospace;
+      }
+      .note,
+      .explain {
+        margin: 9px 0;
+      }
+      .note:empty,
+      .error:empty,
+      .message:empty {
+        display: none;
+      }
+      .error {
+        font-size: 12px;
+        color: var(--error);
+      }
+      .globalError {
+        padding: 0 var(--edge) 9px;
+      }
+      .message {
+        color: var(--focus);
+        font-size: 12px;
+        margin: 9px 0;
+      }
+      .apply,
+      #editbar,
+      .actions {
+        flex-wrap: wrap;
+      }
+      .apply,
+      #editbar {
+        margin-top: 10px;
+      }
+      .apply {
+        font-size: 12px;
+      }
+      .builder {
+        background: var(--well);
+        padding: 12px;
+        margin: 9px 0;
+        border-radius: 9px;
+      }
+      .builder-controls {
+        display: flex;
+        align-items: end;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+      .builder label {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-size: 10px;
+        color: var(--muted);
+        flex: 1 1 105px;
+      }
+      .builder input,
+      .builder select {
+        width: 100%;
+        background: var(--bg);
+      }
+      .logs {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        max-height: 200px;
+        overflow: auto;
+        background: var(--well);
+        padding: 11px;
+        border-radius: 7px;
+        font:
+          12px/1.5 Consolas,
+          monospace;
+      }
+      dialog {
+        width: min(410px, calc(100% - 28px));
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 14px 50px #0003;
+      }
+      dialog::backdrop {
+        background: #14171776;
+      }
+      .dh h2 {
+        font-size: 21px;
+      }
+      #url {
+        display: block;
+        width: 100%;
+        margin: 5px 0 13px;
+      }
+      #form label {
+        font-size: 12px;
+        font-weight: 560;
+      }
+      .modeChoice {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 2px 6px;
+        text-align: left;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        margin: 6px 0;
+        width: 100%;
+      }
+      .modeChoice small {
+        color: var(--muted);
+        font-weight: 400;
+        grid-column: 1;
+      }
+      .modeChoice i {
+        grid-area: 1/2/3/3;
+        align-self: center;
+        visibility: hidden;
+      }
+      .modeChoice[aria-pressed="true"] {
+        background: var(--selected);
+      }
+      .modeChoice[aria-pressed="true"] i {
+        visibility: visible;
+      }
+      #dialogerr {
+        margin-top: 7px;
+      }
+      body.wide {
+        color-scheme: dark;
+        --bg: #1b1c1e;
+        --ink: #f0f1ef;
+        --muted: #b3b5b1;
+        --faint: #a2a5a2;
+        --line: #393b3d;
+        --well: #27292b;
+        --selected: #34452d;
+        --button: #c5ef8c;
+        --onbutton: #1b2417;
+        --bar: #c1e69c;
+        --bar2: #738168;
+        --focus: #c7f196;
+        --error: #ffbfae;
+        --edge: clamp(18px, 3.2vw, 39px);
+      }
+      .wide .shell {
+        position: relative;
+      }
+      .wide .head {
+        min-height: 57px;
+      }
+      .wide .topnav {
+        order: 0;
+        position: absolute;
+        top: 0;
+        right: calc(var(--edge) + 49px);
+        height: 56px;
+        padding: 0;
+        border: 0;
+        justify-content: flex-end;
+        gap: 12px;
+        background: transparent;
+      }
+      .wide .topnav button {
+        font-size: 12px;
+        line-height: 1;
+        min-height: 32px;
+        min-width: 88px;
+        flex-direction: row;
+        gap: 6px;
+        padding: 7px 9px;
+      }
+      .wide .topnav button svg {
+        width: 14px;
+      }
+      .wide .connection {
+        padding: 15px 0;
+        grid-template-columns: 1fr auto auto;
+        gap: 10px;
+      }
+      .wide .statusLine strong {
+        font-size: 22px;
+      }
+      .wide .modeLine {
+        grid-area: 1/2;
+      }
+      .wide .power {
+        grid-area: 1/3;
+        border: 0;
+        width: auto;
+        height: 34px;
+        padding: 5px 12px;
+        background: var(--button);
+        border-radius: 8px;
+        color: var(--onbutton);
+      }
+      .wide .power .knob {
+        width: auto;
+        height: auto;
+        box-shadow: none;
+        background: transparent;
+        transform: none;
+        color: inherit;
+      }
+      .wide .power #powertext {
+        position: static;
+        width: auto;
+        height: auto;
+        clip-path: none;
+        font-size: 12px;
+      }
+      .wide.connected .power {
+        background: var(--well);
+        color: var(--ink);
+      }
+      .wide #first {
+        grid-area: 1/3;
+        margin: 0;
+      }
+      .wide .readouts {
+        display: grid;
+        grid-template-columns: minmax(190px, 0.85fr) minmax(210px, 1fr);
+        gap: 25px;
+        align-items: center;
+        padding: 9px 15px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: #232527;
+      }
+      .wide .current {
+        justify-content: flex-start;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        min-height: 53px;
+        border-radius: 4px;
+      }
+      .wide .currentFlag {
+        width: 32px;
+        height: 32px;
+      }
+      .wide .current i {
+        display: none;
+      }
+      .wide .targetText {
+        column-gap: 8px;
+        grid-template-columns: auto 1fr;
+        align-items: baseline;
+      }
+      .wide .targetText small {
+        grid-column: 1/-1;
+      }
+      .wide .targetText b {
+        font-size: 15px;
+      }
+      .wide .targetText > span {
+        font-size: 11px;
+      }
+      .wide #stats {
+        padding: 2px 0 2px 16px;
+        border-left: 1px solid var(--line);
+      }
+      .wide .statTitle h2 {
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0;
+      }
+      .wide .trafficBar {
+        margin: 5px 0;
+        height: 3px;
+      }
+      .wide .workspace {
+        padding-top: 10px;
+      }
+      .wide .serverBody {
+        position: relative;
+      }
+      .wide .pageHead {
+        margin-bottom: 9px;
+      }
+      .wide .pageHead h1 {
+        font-size: 23px;
+      }
+      .wide .device {
+        margin: 0;
+      }
+      .wide .serverTools {
+        padding-block: 8px;
+      }
+      .wide .pick {
+        min-height: 44px;
+        padding: 6px 5px;
+        gap: 12px;
+      }
+      .wide .flag {
+        width: 26px;
+        height: 26px;
+        font-size: 9px;
+      }
+      .wide .names {
+        display: flex;
+        gap: 9px;
+        align-items: baseline;
+      }
+      .wide .prefslayout {
+        display: grid;
+        grid-template-columns: 155px minmax(0, 1fr);
+        gap: 25px;
+      }
+      .wide #categories {
+        flex-direction: column;
+        align-self: start;
+      }
+      .wide #categories button {
+        justify-content: flex-start;
+        min-height: 34px;
+        font-size: 12px;
+      }
+      .wide .foot {
+        border-top: 1px solid var(--line);
+        padding-block: 9px;
+      }
+      .demo {
+        background: #e8e9e6;
+        min-height: 100vh;
+        padding: 16px 12px 26px;
+      }
+      .demo .shell {
+        max-width: 440px;
+        min-height: 432px;
+        margin: 0 auto;
+        border-radius: 15px;
+        overflow: clip;
+        box-shadow:
+          0 12px 48px -23px #20232165,
+          0 0 0 1px #2428241f;
+      }
+      .demo .topnav {
+        position: static;
+      }
+      .demo.wide .shell {
+        max-width: 850px;
+      }
+      .demo.wide .topnav {
+        position: absolute;
+      }
+      .demo .foot {
+        padding-block: 10px;
+      }
+      .demo .topnav {
+        border-bottom-left-radius: 15px;
+        border-bottom-right-radius: 15px;
+      }
+      @media (max-width: 580px) {
+        .demo {
+          padding: 7px 6px;
+        }
+        .demo .shell {
+          min-height: 420px;
+        }
+        .wide .topnav {
+          gap: 1px;
+          right: calc(var(--edge) + 29px);
+        }
+        .wide .topnav button {
+          min-width: 28px;
+          font-size: 0;
+          gap: 0;
+          padding: 6px;
+        }
+        .wide .topnav button svg {
+          width: 17px;
+        }
+        .wide .connection {
+          grid-template-columns: 1fr auto;
+        }
+        .wide .power,
+        .wide #first {
+          grid-area: 1/2/3/3;
+        }
+        .wide .modeLine {
+          grid-area: 2/1;
+        }
+        .wide .readouts {
+          display: block;
+          padding: 9px 12px;
+        }
+        .wide #stats {
+          padding: 8px 0 0;
+          margin-top: 5px;
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+        .wide .prefslayout {
+          display: block;
+        }
+        .wide #categories {
+          flex-direction: row;
+        }
+        .wide .names {
+          display: grid;
+          gap: 0;
+        }
+        .wide .head .brand small {
+          display: none;
+        }
+        .serverTools .iconbtn {
+          width: 27px;
+        }
+        .wide .statusLine strong {
+          font-size: 17px;
+        }
+        .wide .head {
+          gap: 4px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="wide">
+    <div class="shell">
+      <header class="head">
+        <div class="brand">
+          <img alt="" src="data:image/png;base64,__LOGO__" /><span
+            >Desiignerskii <small>VPN</small></span
+          >
+        </div>
+        <button
+          id="help"
+          class="iconbtn"
+          aria-label="Помощь"
+          title="Помощь"
+          data-icon="headset"
+        ></button>
+      </header>
+      <main id="dashboard">
+        <section class="connection">
+          <div class="statusLine">
+            <span class="statusDot" aria-hidden="true"></span
+            ><strong aria-live="polite" id="status">Запуск клиента</strong>
+          </div>
+          <div class="modeLine">
+            <button id="mode" class="mode" title="Режим подключения">
+              <i data-icon="layers"></i><span id="modetext"></span
+              ><i data-icon="chevron"></i>
+            </button>
+          </div>
+          <button id="power" class="power" aria-label="Подключить VPN">
+            <i class="knob" data-icon="power"></i
+            ><span id="powertext">Подключить</span>
+          </button>
+          <button id="first" class="primary" hidden>
+            <i data-icon="plus"></i>Добавить устройство
+          </button>
+        </section>
+        <div class="readouts">
+          <button id="chooseServer" class="current">
+            <span id="currentFlag" class="currentFlag"></span
+            ><span class="targetText"
+              ><small>Выбранный сервер</small><b id="target"></b
+              ><span id="city"></span></span
+            ><i data-icon="right"></i>
+          </button>
+          <section id="stats" aria-label="Статистика соединения">
+            <div class="statTitle">
+              <h2>Трафик профиля</h2>
+              <span class="session" title="Время текущего сеанса"
+                ><i data-icon="clockIcon"></i
+                ><span id="clock">00:00:00</span></span
+              >
+            </div>
+            <div class="trafficBar" id="trafficBar" aria-hidden="true">
+              <b></b><i></i>
+            </div>
+            <dl class="counters">
+              <div>
+                <dt><i class="downMark"></i>Принято</dt>
+                <dd id="down">—</dd>
+              </div>
+              <div>
+                <dt><i class="upMark"></i>Отправлено</dt>
+                <dd id="up">—</dd>
+              </div>
+            </dl>
+          </section>
+        </div>
+      </main>
+      <section id="serverPage" class="workspace" aria-label="Серверы">
+        <div class="pageHead">
+          <h1>Серверы</h1>
+          <button class="smallbtn" id="add">
+            <i data-icon="plus"></i>Добавить устройство
+          </button>
+        </div>
+        <section class="serverBody">
+          <div id="devices" class="device">
+            <i data-icon="device"></i><b id="dname"></b
+            ><select id="group" aria-label="Устройство" hidden></select
+            ><button
+              class="iconbtn"
+              id="update"
+              aria-label="Обновить подписку"
+              title="Обновить подписку"
+              data-icon="refresh"
+            ></button>
+          </div>
+          <div class="serverTools">
+            <div class="filters">
+              <button id="all" aria-pressed="true">Все</button
+              ><button id="favs" aria-pressed="false">Избранные</button>
+            </div>
+            <label class="find"
+              ><i data-icon="search"></i
+              ><input
+                type="search"
+                id="search"
+                placeholder="Найти сервер"
+                aria-label="Поиск серверов"
+                autocomplete="off"
+            /></label>
+            <button
+              id="latency"
+              class="iconbtn"
+              data-icon="pulse"
+              title="Измерить задержку"
+              aria-label="Измерить задержку"
+            ></button>
+          </div>
+          <div id="list"></div>
+          <p class="zero" id="zero" hidden></p>
+        </section>
+      </section>
+      <p class="error globalError" id="notice" role="alert"></p>
+      <main id="prefs" hidden>
+        <h1>Настройки</h1>
+        <div class="prefslayout">
+          <nav id="categories" aria-label="Настройки клиента"></nav>
+          <section class="detail">
+            <div class="detailtop">
+              <h2 id="prefTitle"></h2>
+              <button
+                class="iconbtn"
+                id="reloadPrefs"
+                aria-label="Обновить параметры"
+                title="Обновить параметры"
+                data-icon="refresh"
+              ></button>
+            </div>
+            <div id="prefFields"></div>
+            <p class="error" id="prefError" role="alert"></p>
+            <div id="editbar" hidden>
+              <button id="save" class="primary">Сохранить</button
+              ><button id="reset" class="smallbtn">Отменить</button>
+            </div>
+            <p id="saved" class="message" role="status"></p>
+            <div id="apply" class="apply" hidden>
+              <span>Изменения вступят в силу при следующем подключении.</span
+              ><button id="reconnect" class="smallbtn">Переподключиться</button>
+            </div>
+          </section>
+        </div>
+      </main>
+      <nav class="topnav" aria-label="Разделы">
+        <button id="home" aria-current="page" data-icon="power">
+          Соединение</button
+        ><button id="settings" data-icon="settings">Настройки</button>
+      </nav>
+      <footer class="foot">
+        <button id="account" class="plain">Личный кабинет</button
+        ><span class="version"><span class="demoTag">Демо · </span>0.5.1</span>
+      </footer>
+    </div>
+    <dialog id="dialog" aria-labelledby="dh">
+      <div class="dh">
+        <h2 id="dh"></h2>
+        <button
+          class="iconbtn"
+          id="close"
+          aria-label="Закрыть"
+          data-icon="close"
+        ></button>
+      </div>
+      <section id="importPane" hidden>
+        <p class="explain">
+          Скопируй персональную ссылку устройства из кабинета. Его серверы
+          появятся в списке.
+        </p>
+        <form id="form">
+          <label
+            >Ссылка устройства<input
+              type="password"
+              class="input"
+              id="url"
+              placeholder="https://desiignerskii.pro/…"
+              required
+              maxlength="512"
+              autocomplete="off"
+          /></label>
+          <div class="actions">
+            <button class="primary" id="submit">Добавить</button
+            ><button type="button" class="smallbtn" id="cab">
+              Открыть кабинет
+            </button>
+          </div>
+        </form>
+      </section>
+      <section id="modePane" hidden>
+        <p class="explain" id="modedesc"></p>
+        <button class="modeChoice" id="tun">
+          <b>Полный туннель · TUN</b
+          ><small>Системный трафик через виртуальный адаптер Windows</small
+          ><i>✓</i></button
+        ><button class="modeChoice" id="proxy">
+          <b>Системный прокси</b
+          ><small>Для приложений, которые учитывают прокси Windows</small
+          ><i>✓</i>
+        </button>
+      </section>
+      <p role="alert" id="dialogerr" class="error"></p>
+    </dialog>
+    <script>
+      "use strict";
+      const $ = (id) => document.getElementById(id),
+        key = "__BRIDGE_KEY__",
+        demo = key === "preview";
+      const paths = {
+        clockIcon: "M21 12a9 9 0 1 1-18 0 9 9 0 1 1 18 0M12 7v5l3 2",
+        headset:
+          "M4 14v-3a8 8 0 0 1 16 0v5a4 4 0 0 1-4 4h-2M4 12h3v6H5a2 2 0 0 1-2-2v-2a2 2 0 0 1 1-2Zm16 0h-3v6h2a2 2 0 0 0 2-2v-2a2 2 0 0 0-1-2Z",
+        chevron: "m6 9 6 6 6-6",
+        right: "m9 5 7 7-7 7",
+        path: "M5 5h5a3 3 0 0 1 3 3v8a3 3 0 0 0 3 3h3M15 5h4v4m0-4-6 6M3 3h4v4H3z",
+        plus: "M12 5v14M5 12h14",
+        search: "M16 16l4.5 4.5 M18 10.5a7.5 7.5 0 1 1-15 0 7.5 7.5 0 1 1 15 0",
+        settings: "M4 7h5m4 0h7M4 17h9m4 0h3M11 4v6m4 4v6",
+        pulse: "M2 13h5l3-8 4 15 3-9h5",
+        device: "M3 4h18v13H3zM8 21h8m-4-4v4",
+        refresh: "M20 7v5h-5M4 17v-5h5M6 7a8 8 0 0 1 13 2m-1 8a8 8 0 0 1-13-2",
+        layers: "M3 8l9-5 9 5-9 5zM3 12l9 5 9-5M3 16l9 5 9-5",
+        power: "M12 2v9m-5.5-6a8.5 8.5 0 1 0 11 0",
+        down: "M12 3v15m-6-6 6 6 6-6",
+        up: "M12 21V6m-6 6 6-6 6 6",
+        close: "m6 6 12 12M18 6 6 18",
+        star: "m12 3 2.8 5.8 6.4.9-4.6 4.5 1.1 6.4-5.7-3-5.7 3 1.1-6.4-4.6-4.5 6.4-.9z",
+        globe:
+          "M21 12a9 9 0 1 1-18 0 9 9 0 1 1 18 0M3 12h18m-9-9c-5 5-5 13 0 18m0-18c5 5 5 13 0 18",
+      };
+      function icon(name) {
+        const ns = "http://www.w3.org/2000/svg",
+          s = document.createElementNS(ns, "svg"),
+          p = document.createElementNS(ns, "path");
+        s.setAttribute("viewBox", "0 0 24 24");
+        s.setAttribute("aria-hidden", "true");
+        s.setAttribute("focusable", "false");
+        p.setAttribute("d", paths[name]);
+        s.append(p);
+        return s;
+      }
+      document
+        .querySelectorAll("[data-icon]")
+        .forEach((e) => e.append(icon(e.dataset.icon)));
+      const modes = { tun: "Полный туннель", proxy: "Системный прокси" };
+      const init = {
+        state: "starting",
+        mode: "tun",
+        nodes: [],
+        groups: [],
+        favorites: [],
+        selected: -1,
+        active: false,
+        busy: true,
+        since: 0,
+        error: "",
+      };
+      const sample = {
+        ...init,
+        state: "idle",
+        busy: false,
+        groups: [{ id: 1, name: "Мой компьютер" }],
+        selected: 4,
+        favorites: [4],
+        nodes: [
+          {
+            id: 4,
+            group: 1,
+            name: "Нидерланды · Амстердам",
+            country: "NL",
+            latency: 38,
+            down: 242221056,
+            up: 11734951,
+          },
+          {
+            id: 5,
+            group: 1,
+            name: "Германия · Франкфурт",
+            country: "DE",
+            latency: 47,
+            down: 0,
+            up: 0,
+          },
+          {
+            id: 6,
+            group: 1,
+            name: "Финляндия · Хельсинки",
+            country: "FI",
+            latency: 56,
+            down: 0,
+            up: 0,
+          },
+          {
+            id: 7,
+            group: 1,
+            name: "Швеция · Стокгольм",
+            country: "SE",
+            latency: 62,
+            down: 0,
+            up: 0,
+          },
+        ],
+      };
+      let s = { ...init },
+        favOnly = false,
+        shownGroup = null,
+        panel = "",
+        pending = "",
+        sending = false,
+        dirty = "",
+        groupSig = "";
+      if (demo) document.body.classList.add("demo");
+      function txt(id, value) {
+        if ($(id).textContent !== value) $(id).textContent = value;
+      }
+      function duration(seconds) {
+        const n = Math.max(0, seconds | 0);
+        return [Math.floor(n / 3600), Math.floor(n / 60) % 60, n % 60]
+          .map((v) => String(v).padStart(2, "0"))
+          .join(":");
+      }
+      function bytes(n) {
+        let v = Number(n) || 0,
+          i = 0;
+        const u = ["Б", "КБ", "МБ", "ГБ", "ТБ"];
+        while (v >= 1024 && i < u.length - 1) {
+          v /= 1024;
+          i++;
+        }
+        return (
+          new Intl.NumberFormat("ru", {
+            maximumFractionDigits: i ? 1 : 0,
+          }).format(v) +
+          " " +
+          u[i]
+        );
+      }
+      function elem(tag, cls, value) {
+        let e = document.createElement(tag);
+        e.className = cls;
+        if (value !== undefined) e.textContent = value;
+        return e;
+      }
+      const regionNames = new Map();
+      for (const locale of ["ru", "en"]) {
+        const names = new Intl.DisplayNames([locale], { type: "region" });
+        for (const code of "AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW".split(
+          " ",
+        ))
+          regionNames.set(names.of(code).toLocaleLowerCase(locale), code);
+      }
+      function countryFor(node) {
+        if (!node) return "";
+        const measured = (node.country || "").toUpperCase();
+        if (/^[A-Z]{2}$/.test(measured)) return measured;
+        const flag = node.name.match(/[\u{1f1e6}-\u{1f1ff}]{2}/u);
+        if (flag)
+          return Array.from(flag[0], (c) =>
+            String.fromCharCode(65 + c.codePointAt(0) - 0x1f1e6),
+          ).join("");
+        const first = node.name.split(/\s+[·•|—–-]\s+/)[0].trim();
+        return regionNames.get(first.toLocaleLowerCase()) || "";
+      }
+      const flagFills = {
+        NL: "linear-gradient(#bc474d 0 33.33%,#f2efe9 33.33% 66.66%,#47649a 66.66%)",
+        DE: "linear-gradient(#212625 0 33.33%,#c95050 33.33% 66.66%,#ebc357 66.66%)",
+        FI: "linear-gradient(90deg,transparent 31%,#365994 31% 50%,transparent 50%),linear-gradient(#e6ece8 39%,#365994 39% 58%,#e6ece8 58%)",
+        SE: "linear-gradient(90deg,transparent 32%,#f1c653 32% 48%,transparent 48%),linear-gradient(#34749b 39%,#f1c653 39% 56%,#34749b 56%)",
+      };
+      function setFlag(element, code) {
+        if (element.dataset.region === code) return;
+        element.dataset.region = code;
+        element.dataset.known = String(Boolean(flagFills[code]));
+        element.style.setProperty(
+          "--flag-bg",
+          flagFills[code] || "transparent",
+        );
+        element.replaceChildren();
+        if (!flagFills[code]) {
+          if (code) element.textContent = code;
+          else element.append(icon("globe"));
+        }
+      }
+      function row(n, locked) {
+        const chosen = n.id === s.selected,
+          starred = (s.favorites || []).includes(n.id),
+          container = elem("div", "server" + (chosen ? " sel" : "")),
+          pick = elem("button", "pick");
+        pick.disabled = locked;
+        pick.setAttribute("aria-pressed", String(chosen));
+        pick.setAttribute("aria-label", "Выбрать " + n.name);
+        pick.onclick = () => act("select", "", n.id);
+        const flag = elem("span", "flag");
+        flag.setAttribute("aria-hidden", "true");
+        setFlag(flag, countryFor(n));
+        const names = elem("span", "names"),
+          parts = n.name.split(/\s+[·•]\s+/);
+        names.append(elem("b", "", parts[0] || n.name));
+        if (parts.length > 1)
+          names.append(elem("small", "", parts.slice(1).join(" · ")));
+        pick.append(flag, names);
+        const latency = elem(
+          "span",
+          "latency",
+          n.latency > 0
+            ? n.latency + " мс"
+            : n.latency < 0
+              ? "Нет ответа"
+              : "—",
+        );
+        latency.title =
+          n.latency > 0
+            ? "Задержка по последнему тесту"
+            : n.latency < 0
+              ? "Сервер не ответил на тест"
+              : "Задержка ещё не измерена";
+        pick.append(latency);
+        const star = elem("button", "star" + (starred ? " saved" : ""));
+        star.disabled = locked;
+        star.append(icon("star"));
+        star.setAttribute("aria-pressed", String(starred));
+        star.setAttribute(
+          "aria-label",
+          (starred ? "Убрать из избранных: " : "В избранные: ") + n.name,
+        );
+        star.onclick = () => act("favorite", "", n.id);
+        container.append(pick, star);
+        return container;
+      }
+      function paint() {
+        const nodes = s.nodes || [],
+          gs = s.groups || [],
+          selected = nodes.find((n) => n.id === s.selected),
+          empty = !nodes.length,
+          locked = s.busy || sending,
+          initial = s.state === "starting",
+          broken = s.state === "error";
+        const gsNow = JSON.stringify(gs);
+        if (groupSig !== gsNow) {
+          groupSig = gsNow;
+          $("group").replaceChildren(
+            ...gs.map((g) => {
+              const opt = document.createElement("option");
+              opt.value = g.id;
+              opt.textContent = g.name;
+              return opt;
+            }),
+          );
+          if (!gs.some((g) => g.id === shownGroup))
+            shownGroup = selected?.group ?? gs[0]?.id ?? null;
+        }
+        $("devices").hidden = !gs.length;
+        $("group").hidden = gs.length <= 1;
+        $("dname").hidden = gs.length > 1;
+        txt("dname", gs[0]?.name || "");
+        $("group").value = String(shownGroup);
+        $("update").disabled = locked || s.active;
+        $("group").disabled = locked;
+        $("all").setAttribute("aria-pressed", String(!favOnly));
+        $("favs").setAttribute("aria-pressed", String(favOnly));
+        const query = $("search").value.toLocaleLowerCase("ru").trim();
+        const sig = JSON.stringify([
+          nodes.map((n) => [n.id, n.name, n.group, n.country, n.latency]),
+          s.favorites,
+          s.selected,
+          query,
+          favOnly,
+          shownGroup,
+          locked,
+        ]);
+        if (dirty !== sig) {
+          dirty = sig;
+          const list = nodes.filter(
+            (n) =>
+              (shownGroup === null || shownGroup === n.group) &&
+              (!favOnly || (s.favorites || []).includes(n.id)) &&
+              n.name.toLocaleLowerCase("ru").includes(query),
+          );
+          $("list").replaceChildren(...list.map((n) => row(n, locked)));
+          $("zero").hidden = list.length > 0;
+          txt(
+            "zero",
+            initial
+              ? "Загрузка серверов…"
+              : empty
+                ? "Добавь ссылку устройства, чтобы увидеть его серверы."
+                : query
+                  ? "Ничего не найдено."
+                  : favOnly
+                    ? "Отметь сервер звёздочкой, чтобы добавить его сюда."
+                    : "В подписке пока нет серверов.",
+          );
+        }
+        $("latency").disabled = locked || empty;
+        $("add").disabled = locked || s.active;
+        $("first").hidden = !empty || initial || broken;
+        $("first").disabled = locked;
+        $("power").disabled = locked || empty || initial || broken;
+        $("power").setAttribute("aria-pressed", String(s.active));
+        $("power").title = s.active ? "Отключить VPN" : "Подключить VPN";
+        $("add").hidden = empty;
+        document.querySelector(".readouts").hidden = empty;
+        $("power").setAttribute(
+          "aria-label",
+          s.active ? "Отключить VPN" : "Подключить VPN",
+        );
+        document.body.classList.toggle("connected", s.active && !s.uncertain);
+        txt("clock", duration(s.active ? Date.now() / 1000 - s.since : 0));
+        txt(
+          "status",
+          broken
+            ? "Движок недоступен"
+            : s.uncertain
+              ? "Состояние неизвестно"
+              : initial
+                ? "Запуск клиента"
+                : locked && pending === "connect"
+                  ? "Подключаемся"
+                  : locked && pending === "disconnect"
+                    ? "Отключаемся"
+                    : locked && pending === "select" && s.active
+                      ? "Меняем сервер"
+                      : s.active
+                        ? "VPN включён"
+                        : "VPN выключен",
+        );
+        setFlag($("currentFlag"), countryFor(selected));
+        const rx = Math.max(0, Number(selected?.down) || 0),
+          tx = Math.max(0, Number(selected?.up) || 0);
+        const total = rx + tx,
+          bar = $("trafficBar");
+        bar.style.setProperty("--received", total ? rx / total : 0);
+        bar.style.setProperty("--sent", total ? tx / total : 0);
+        bar.style.gap = rx && tx ? "3px" : "0px";
+        $("chooseServer").disabled = empty || locked;
+        $("chooseServer").hidden = empty;
+        const place = (selected?.name || "").split(/\s+[·•]\s+/);
+        txt(
+          "target",
+          place[0] || (empty ? "Добавь устройство" : "Выбери сервер"),
+        );
+        txt(
+          "city",
+          place.slice(1).join(" · ") ||
+            (empty ? "Подключи ссылку из личного кабинета." : ""),
+        );
+        txt(
+          "powertext",
+          pending === "connect" && locked
+            ? "Подключаем…"
+            : s.active
+              ? "Отключить"
+              : "Подключить",
+        );
+        $("power").hidden = empty && !initial && !broken;
+        txt(
+          "modetext",
+          s.mode === "proxy" ? "Системный прокси" : "Полный туннель · TUN",
+        );
+        $("stats").hidden = !selected;
+        txt("down", bytes(selected?.down));
+        txt("up", bytes(selected?.up));
+        txt("notice", s.error || "");
+        for (const m of Object.keys(modes)) {
+          $(m).setAttribute("aria-pressed", String(m === s.mode));
+          $(m).disabled = locked || s.active;
+        }
+        txt(
+          "modedesc",
+          s.active
+            ? "Отключи соединение, чтобы сменить режим."
+            : "При первом включении TUN Windows может запросить разрешение для движка Throne.",
+        );
+        $("submit").disabled = locked;
+        txt(
+          "submit",
+          locked && pending === "import" ? "Добавляем…" : "Добавить",
+        );
+        if (panel && s.error) txt("dialogerr", s.error);
+        fillPrefs();
+      }
+      function openPane(name) {
+        panel = name;
+        txt("dialogerr", "");
+        txt(
+          "dh",
+          name === "mode" ? "Режим подключения" : "Добавить устройство",
+        );
+        $("modePane").hidden = name !== "mode";
+        $("importPane").hidden = name !== "import";
+        if (!$("dialog").open) $("dialog").showModal();
+        if (name === "import") $("url").focus();
+        paint();
+      }
+      $("dialog").onclose = () => {
+        panel = "";
+        $("url").value = "";
+        txt("dialogerr", "");
+      };
+      $("close").onclick = () => $("dialog").close();
+      async function refresh() {
+        const seq = ++readSeq;
+        if (demo) s = { ...sample };
+        else if (typeof window.dsState === "function") {
+          try {
+            const result = await window.dsState(key);
+            if (seq !== readSeq) return;
+            s = result;
+          } catch {
+            s = {
+              ...s,
+              state: "error",
+              busy: false,
+              error: "Потеряна связь с клиентом.",
+            };
+          }
+        }
+        if (pending && !sending && !s.busy) {
+          if (!s.error) {
+            didFinish(pending);
+            if (pending === "select" && !$("serverPage").hidden)
+              showPage("home");
+            if (pending === "import") {
+              shownGroup =
+                s.nodes?.find((n) => n.id === s.selected)?.group ?? shownGroup;
+              favOnly = false;
+              $("search").value = "";
+            }
+            if (
+              (pending === "import" || pending === "mode") &&
+              $("dialog").open
+            )
+              $("dialog").close();
+          }
+          pending = "";
+        }
+        paint();
+      }
+      async function simulate(op, arg, id) {
+        sample.error = "";
+        sample.busy = true;
+        await new Promise((r) => setTimeout(r, 240));
+        if (op === "connect") {
+          sample.active = true;
+          sample.since = (Date.now() / 1000) | 0;
+        } else if (op === "disconnect") sample.active = false;
+        else if (op === "mode") sample.mode = arg;
+        else if (op === "select") {
+          sample.selected = id;
+          if (sample.active) sample.since = (Date.now() / 1000) | 0;
+        } else if (op === "favorite")
+          sample.favorites = sample.favorites.includes(id)
+            ? sample.favorites.filter((n) => n !== id)
+            : [...sample.favorites, id];
+        else if (op === "import") {
+          if (
+            !/^https:\/\/desiignerskii\.pro\/(?:s|join)\/[A-Za-z0-9_-]{43}$/.test(
+              arg,
+            )
+          )
+            sample.error = "Вставь ссылку устройства из кабинета.";
+          else {
+            if (!sample.groups.some((g) => g.id === 2)) {
+              sample.groups.push({ id: 2, name: "Устройство 2" });
+              sample.nodes.push({
+                id: 8,
+                group: 2,
+                name: "Тестовый сервер",
+                latency: 0,
+                up: 0,
+                down: 0,
+              });
+            }
+            sample.selected = 8;
+          }
+        } else if (op === "latency")
+          sample.nodes.forEach((n, i) => (n.latency = 36 + i * 8));
+        demoAdvanced(op, arg, id);
+        sample.busy = false;
+      }
+      async function act(op, arg = "", id = -1) {
+        if (s.busy || sending) return;
+        sending = true;
+        pending = op;
+        txt("dialogerr", "");
+        paint();
+        try {
+          if (demo) await simulate(op, arg, id);
+          else await window.dsAction(key, op, arg, id);
+        } finally {
+          sending = false;
+          await refresh();
+        }
+      }
+      function external(dest) {
+        if (demo) {
+          const urls = {
+            help: "https://desiignerskii.pro/help",
+            account: "https://desiignerskii.pro/account/connect",
+          };
+          window.open(urls[dest], "_blank", "noopener,noreferrer");
+        } else window.dsOpen(key, dest);
+      }
+      $("all").onclick = () => {
+        favOnly = false;
+        paint();
+      };
+      $("favs").onclick = () => {
+        favOnly = true;
+        paint();
+      };
+      $("search").oninput = paint;
+      $("group").onchange = () => {
+        shownGroup = Number($("group").value);
+        paint();
+      };
+      $("latency").onclick = () => act("latency");
+      $("update").onclick = () => act("update", "", shownGroup);
+      $("add").onclick = $("first").onclick = () => openPane("import");
+      $("mode").onclick = () => openPane("mode");
+      $("power").onclick = () => act(s.active ? "disconnect" : "connect");
+      for (const m of Object.keys(modes)) $(m).onclick = () => act("mode", m);
+      $("form").onsubmit = (e) => {
+        e.preventDefault();
+        act("import", $("url").value.trim());
+      };
+      $("account").onclick = $("cab").onclick = () => external("account");
+      $("help").onclick = () => external("help");
+      for (const e of ["drop", "dragover"])
+        document.addEventListener(e, (event) => event.preventDefault());
+      const sections = {
+        network: ["Туннель", "layers"],
+        dns: ["DNS", "globe"],
+        routes: ["Маршрутизация", "path"],
+        subs: ["Подписки", "refresh"],
+        diagnostics: ["Диагностика", "pulse"],
+      };
+      const schema = {
+        network: [
+          [
+            "tun_mtu",
+            "Размер пакета, байт",
+            "Максимальный размер пакета адаптера TUN.",
+            1000,
+            10000,
+          ],
+          ["tun_ipv6", "IPv6", "Направлять IPv6 через туннель.", "bool"],
+          [
+            "tun_strict_route",
+            "Строгая маршрутизация",
+            "Применять строгие правила маршрутизации Windows при работе TUN.",
+            "bool",
+          ],
+          [
+            "tun_ipv4_cidr",
+            "Адрес адаптера IPv4",
+            "С префиксом подсети, например 172.19.0.1/24.",
+            "text",
+          ],
+          [
+            "tun_ipv6_cidr",
+            "Адрес адаптера IPv6",
+            "Используется при включённом IPv6.",
+            "text",
+          ],
+        ],
+        dns: [
+          [
+            "remote_dns",
+            "DNS через VPN",
+            "Для запросов, которые идут через сервер VPN.",
+            "text",
+          ],
+          [
+            "direct_dns",
+            "Прямой DNS",
+            "Для прямых соединений в обход туннеля.",
+            "text",
+          ],
+          [
+            "dns_in_port",
+            "Локальный порт DNS",
+            "Порт DNS-сервера на этом компьютере.",
+            1,
+            65535,
+          ],
+        ],
+        subs: [
+          [
+            "sub_auto_update",
+            "Обновление подписок, мин",
+            "От 30 минут. Значение 0 отключает автообновление.",
+            0,
+            525600,
+          ],
+          [
+            "sub_respect_server_interval",
+            "Интервал от сервера",
+            "Учитывать частоту обновления, которую указывает подписка.",
+            "bool",
+          ],
+          [
+            "route_auto_update",
+            "Обновление маршрутов, мин",
+            "Для удалённых профилей маршрутизации. Значение 0 отключает обновление.",
+            0,
+            525600,
+          ],
+        ],
+        diagnostics: [
+          [
+            "test_url",
+            "Адрес для теста URL",
+            "HTTP- или HTTPS-адрес для проверки ответа сервера.",
+            "url",
+          ],
+          [
+            "test_timeout_ms",
+            "Ожидание ответа, мс",
+            "Значение 0 использует тайм-аут движка.",
+            0,
+            60000,
+          ],
+          [
+            "test_concurrency",
+            "Одновременные проверки",
+            "Число профилей, которые движок может проверять параллельно.",
+            1,
+            499,
+          ],
+          [
+            "log_level",
+            "Уровень журнала",
+            "Объём записей сетевого движка.",
+            ["trace", "debug", "info", "warn", "error", "fatal", "panic"],
+          ],
+        ],
+      };
+      const previewDefaults = {
+        tun_mtu: 1500,
+        tun_ipv6: true,
+        tun_strict_route: true,
+        tun_ipv4_cidr: "172.19.0.1/24",
+        tun_ipv6_cidr: "fdfe:dcba:9876::1/96",
+        remote_dns: "https://1.1.1.1/dns-query",
+        direct_dns: "localhost",
+        dns_in_port: 6450,
+        sub_auto_update: 1440,
+        sub_respect_server_interval: true,
+        route_auto_update: 0,
+        test_url: "https://www.gstatic.com/generate_204",
+        test_timeout_ms: 5000,
+        test_concurrency: 10,
+        log_level: "info",
+      };
+      const previewRoutes = [
+        { id: 0, name: "Основной", active: true, in_use: true },
+        { id: 1, name: "Рабочий", active: false, in_use: false },
+      ];
+      let exampleRules = {
+        0: { direct: "", proxy: "", block: "" },
+        1: { direct: "", proxy: "", block: "" },
+      };
+      let exampleSettings = { ...previewDefaults };
+      if (demo) {
+        try {
+          const stored = JSON.parse(
+            localStorage.getItem("ds-desktop-demo-030") || "{}",
+          );
+          Object.assign(exampleSettings, stored.settings);
+          Object.assign(exampleRules, stored.rules);
+          if (stored.mode === "proxy") sample.mode = "proxy";
+          if (previewRoutes.some((r) => r.id === stored.route))
+            previewRoutes.forEach((r) => {
+              r.active = r.in_use = r.id === stored.route;
+            });
+        } catch {}
+      }
+      function storeExample() {
+        try {
+          localStorage.setItem(
+            "ds-desktop-demo-030",
+            JSON.stringify({
+              settings: exampleSettings,
+              rules: exampleRules,
+              route: previewRoutes.find((r) => r.active)?.id,
+              mode: sample.mode,
+            }),
+          );
+        } catch {}
+      }
+      let prefsOpen = false,
+        section = "network",
+        renderKey = "",
+        drafts = {},
+        routeDrafts = {},
+        ruleBases = {},
+        noticeText = "",
+        localError = "",
+        lastLoad = "",
+        readSeq = 0;
+      function scopedDraft() {
+        return section === "routes"
+          ? (routeDrafts[s.editor?.id] ??= {})
+          : (drafts[section] ??= {});
+      }
+      function hasDraft() {
+        return Object.keys(scopedDraft()).length > 0;
+      }
+      function currentValue(id) {
+        return section === "routes" ? s.editor?.simple?.[id] : s.settings?.[id];
+      }
+      function setValue(id, value) {
+        const draft = scopedDraft();
+        if (value === currentValue(id)) delete draft[id];
+        else draft[id] = value;
+        if (section === "routes") {
+          const bases = (ruleBases[s.editor.id] ??= {});
+          if (value === currentValue(id)) delete bases[id];
+          else if (!Object.hasOwn(bases, id)) bases[id] = currentValue(id);
+        }
+        noticeText = "";
+        localError = "";
+        syncBar();
+      }
+      function syncBar() {
+        const locked =
+          s.busy || sending || s.state === "error" || s.state === "starting";
+        $("editbar").hidden = !hasDraft();
+        $("save").disabled = locked;
+        $("reset").disabled = locked;
+        $("reloadPrefs").disabled = locked || hasDraft();
+        $("apply").hidden = !s.active || !s.restart;
+        $("reconnect").disabled = locked;
+        txt("saved", noticeText);
+        txt("prefError", localError || s.error || "");
+        for (const el of $("prefFields").querySelectorAll("[data-lock]"))
+          el.disabled = locked || el.dataset.lock === "permanent";
+        for (const el of $("categories").children) el.disabled = locked;
+      }
+      function field(label, hint, id, control, wide = false) {
+        const box = elem("div", "field" + (wide ? " area" : "")),
+          left = elem("div", "");
+        const title = elem("label", "", label);
+        title.htmlFor = id;
+        control.id = id;
+        left.append(title);
+        if (hint) {
+          const small = elem("small", "", hint);
+          small.id = id + "-hint";
+          left.append(small);
+          control.setAttribute("aria-describedby", small.id);
+        }
+        box.append(left, control);
+        return box;
+      }
+      function buildField(def) {
+        const [id, label, hint, kind, limit] = def;
+        const val = scopedDraft()[id] ?? currentValue(id);
+        let el;
+        if (kind === "bool") {
+          el = elem("button", "switch");
+          el.setAttribute("role", "switch");
+          el.setAttribute("aria-label", label);
+          el.setAttribute("aria-checked", String(val));
+          el.onclick = () => {
+            const next = el.getAttribute("aria-checked") !== "true";
+            el.setAttribute("aria-checked", String(next));
+            setValue(id, next);
+          };
+        } else if (Array.isArray(kind)) {
+          el = elem("select", "");
+          for (const x of new Set([...kind, val])) el.append(new Option(x, x));
+          el.value = val;
+          el.onchange = () => setValue(id, el.value);
+        } else {
+          el = elem("input", "in");
+          el.type = typeof kind === "number" ? "number" : kind;
+          el.value = val;
+          el.required = true;
+          if (el.type === "number") {
+            el.min = kind;
+            el.max = limit;
+            el.step = 1;
+          } else {
+            el.maxLength = 1024;
+            el.spellcheck = false;
+          }
+          el.oninput = () => {
+            el.setCustomValidity("");
+            setValue(
+              id,
+              el.type === "number" && el.value !== ""
+                ? Number(el.value)
+                : el.value,
+            );
+          };
+        }
+        el.dataset.lock = "";
+        return field(label, hint, id, el);
+      }
+      function ruleBuilder() {
+        const box = elem("form", "builder");
+        const controls = elem("div", "builder-controls"),
+          kind = elem("select", ""),
+          value = elem("input", "in"),
+          output = elem("select", ""),
+          add = elem("button", "smallbtn", "Добавить в список");
+        const label = (text, input) => {
+          const tag = elem("label", "", text);
+          tag.append(input);
+          return tag;
+        };
+        kind.add(new Option("Сайт", "site"));
+        kind.add(new Option("Программа Windows", "app"));
+        for (const [id, name] of [
+          ["direct", "Напрямую"],
+          ["proxy", "Через VPN"],
+          ["block", "Блокировать"],
+        ])
+          output.add(new Option(name, id));
+        value.required = true;
+        value.maxLength = 255;
+        value.spellcheck = false;
+        value.placeholder = "example.org";
+        value.oninput = () => value.setCustomValidity("");
+        kind.onchange = () => {
+          value.setCustomValidity("");
+          value.placeholder = kind.value === "site" ? "example.org" : "app.exe";
+        };
+        for (const el of [kind, value, output, add]) el.dataset.lock = "";
+        controls.append(
+          label("Тип", kind),
+          label("Сайт или имя файла", value),
+          label("Действие", output),
+          add,
+        );
+        box.append(controls);
+        box.onsubmit = (event) => {
+          event.preventDefault();
+          const raw = value.value.trim();
+          let entry = "";
+          if (kind.value === "site") {
+            try {
+              const host = new URL("https://" + raw).hostname;
+              if (
+                !host ||
+                /[\s/:@?#\\]/.test(raw) ||
+                !host.includes(".") ||
+                host
+                  .split(".")
+                  .some(
+                    (p) => !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(p),
+                  )
+              )
+                throw Error();
+              entry = "suffix:" + host;
+            } catch {
+              value.setCustomValidity("Введи домен, например example.org.");
+              value.reportValidity();
+              return;
+            }
+          } else {
+            if (!/^[^\\/:*?"<>|\r\n]+\.exe$/i.test(raw)) {
+              value.setCustomValidity(
+                "Введи имя файла программы, например app.exe.",
+              );
+              value.reportValidity();
+              return;
+            }
+            entry = "processName:" + raw;
+          }
+          const el = $(output.value),
+            lines = el.value.split(/\r?\n/);
+          if (lines.some((line) => line.trim() === entry)) {
+            value.setCustomValidity("Это правило уже есть в списке.");
+            value.reportValidity();
+            return;
+          }
+          el.value = [el.value.trimEnd(), entry].filter(Boolean).join("\n");
+          setValue(output.value, el.value);
+          value.value = "";
+          value.focus();
+        };
+        return box;
+      }
+
+      function fillRoutes(area) {
+        const editor = s.editor,
+          list = s.routes || [];
+        if (!editor) {
+          area.append(
+            elem(
+              "p",
+              "note",
+              lastLoad === "routes" && !s.busy
+                ? "Движок не вернул доступных маршрутов."
+                : "Загружаем маршруты…",
+            ),
+          );
+          return;
+        }
+        const select = elem("select", "");
+        for (const r of list) select.append(new Option(r.name, r.id));
+        select.value = editor.id;
+        select.dataset.lock = "";
+        select.onchange = () => {
+          const id = Number(select.value);
+          select.value = editor.id;
+          act("routes", "", id);
+        };
+        const route = list.find((r) => r.id === editor.id);
+        area.append(
+          field(
+            "Профиль маршрутизации",
+            route?.in_use
+              ? "Используется сейчас."
+              : route?.active
+                ? "Выбран по умолчанию."
+                : "Доступен в движке.",
+            "routeSelect",
+            select,
+          ),
+        );
+        if (!route?.active) {
+          const activate = elem(
+            "button",
+            "smallbtn",
+            "Использовать по умолчанию",
+          );
+          activate.dataset.lock = s.active ? "permanent" : "";
+          activate.onclick = () => act("activate-route", "", editor.id);
+          area.append(activate);
+        }
+        area.append(
+          elem(
+            "p",
+            "note",
+            editor.editable
+              ? "Одно правило на строку. Для сайта и его поддоменов — suffix:example.com, для программы — processName:app.exe."
+              : "Этот профиль задаёт поставщик или файл конфигурации. Правила доступны для просмотра.",
+          ),
+        );
+        if (editor.editable) area.append(ruleBuilder());
+        for (const [id, title] of [
+          ["direct", "Напрямую"],
+          ["proxy", "Через VPN"],
+          ["block", "Блокировать"],
+        ]) {
+          const el = elem("textarea", "");
+          el.spellcheck = false;
+          el.rows = 2;
+          el.readOnly = !editor.editable;
+          el.dataset.lock = "";
+          el.value = scopedDraft()[id] ?? editor.simple[id] ?? "";
+          el.oninput = () => setValue(id, el.value);
+          area.append(field(title, "", id, el, true));
+        }
+        if (editor.customDNS)
+          area.append(
+            elem(
+              "p",
+              "note",
+              "У этого маршрута свои DNS-серверы. Они имеют приоритет над общими настройками DNS.",
+            ),
+          );
+      }
+      function fillPrefs() {
+        if (!prefsOpen) return;
+        const key = JSON.stringify([
+          section,
+          section === "routes" ? [s.editor, s.routes] : s.settings,
+          section === "diagnostics" ? s.logs : null,
+          s.mode,
+          s.active,
+          lastLoad,
+        ]);
+        if (key !== renderKey) {
+          renderKey = key;
+          const area = $("prefFields");
+          area.replaceChildren();
+          txt("prefTitle", sections[section][0]);
+          if (section === "routes") fillRoutes(area);
+          else {
+            if (section === "network") {
+              const mode = elem(
+                "button",
+                "smallbtn",
+                s.mode === "tun" ? "Полный туннель · TUN" : "Системный прокси",
+              );
+              mode.dataset.lock = s.active ? "permanent" : "";
+              mode.onclick = () => openPane("mode");
+              area.append(
+                field(
+                  "Режим подключения",
+                  s.active
+                    ? "Чтобы сменить режим, отключи VPN."
+                    : "Определяет, какой трафик проходит через VPN.",
+                  "changeMode",
+                  mode,
+                ),
+              );
+            }
+            if (s.settings) {
+              for (const spec of schema[section])
+                if (Object.hasOwn(s.settings, spec[0]))
+                  area.append(buildField(spec));
+            } else
+              area.append(
+                elem(
+                  "p",
+                  "note",
+                  s.error
+                    ? "Обнови параметры, чтобы повторить запрос."
+                    : "Загружаем параметры движка…",
+                ),
+              );
+            if (section === "diagnostics") {
+              const read = elem(
+                "button",
+                "smallbtn log-action",
+                s.logs ? "Обновить журнал" : "Открыть журнал",
+              );
+              read.dataset.lock = "";
+              read.onclick = () => act("logs");
+              area.append(read);
+              if (s.logs) {
+                const log = elem(
+                  "pre",
+                  "logs",
+                  s.logs
+                    .map(
+                      (l) =>
+                        new Date(l.time * 1000).toLocaleTimeString("ru") +
+                        "  " +
+                        l.text,
+                    )
+                    .join("\n") || "Записей пока нет.",
+                );
+                log.tabIndex = 0;
+                area.append(log);
+              }
+            }
+          }
+          for (const item of $("categories").children) {
+            if (item.dataset.section === section)
+              item.setAttribute("aria-current", "page");
+            else item.removeAttribute("aria-current");
+          }
+        }
+        syncBar();
+      }
+      function loadSection(force = false) {
+        if (s.busy || sending || s.state === "starting" || s.state === "error")
+          return;
+        const op = section === "routes" ? "routes" : "settings";
+        if (
+          force ||
+          ((op === "routes" ? s.routes == null : s.settings == null) &&
+            lastLoad !== op)
+        ) {
+          lastLoad = op;
+          act(op, "", op === "routes" && s.editor ? s.editor.id : -1);
+        }
+      }
+      function showPage(name) {
+        prefsOpen = name === "settings";
+        $("dashboard").hidden = prefsOpen;
+        $("serverPage").hidden = prefsOpen;
+        $("prefs").hidden = !prefsOpen;
+        for (const key of ["home", "settings"]) {
+          if (name === key) $(key).setAttribute("aria-current", "page");
+          else $(key).removeAttribute("aria-current");
+        }
+        $("notice").hidden = prefsOpen;
+      }
+      function showPrefs(which = section) {
+        section = which;
+        showPage("settings");
+        localError = "";
+        noticeText = "";
+        renderKey = "";
+        fillPrefs();
+        loadSection();
+      }
+      for (const [id, [title, symbol]] of Object.entries(sections)) {
+        const b = elem("button", "");
+        b.dataset.section = id;
+        b.append(icon(symbol), document.createTextNode(title));
+        b.onclick = () => showPrefs(id);
+        $("categories").append(b);
+      }
+      $("home").onclick = () => showPage("home");
+      $("chooseServer").onclick = () => {
+        $("search").focus();
+        $("search").select();
+      };
+      $("settings").onclick = () => showPrefs();
+      $("reloadPrefs").onclick = () => {
+        noticeText = "";
+        localError = "";
+        loadSection(true);
+      };
+      $("reset").onclick = () => {
+        if (section === "routes") {
+          delete routeDrafts[s.editor.id];
+          delete ruleBases[s.editor.id];
+        } else delete drafts[section];
+        localError = "";
+        noticeText = "";
+        renderKey = "";
+        fillPrefs();
+      };
+      $("save").onclick = () => {
+        for (const el of $("prefFields").querySelectorAll("input")) {
+          if (!Object.hasOwn(scopedDraft(), el.id)) continue;
+          if (
+            ["sub_auto_update", "route_auto_update"].includes(el.id) &&
+            Number(el.value) > 0 &&
+            Number(el.value) < 30
+          )
+            el.setCustomValidity("Укажи 0 или интервал от 30 минут.");
+          if (el.id === "test_url" && !/^https?:\/\//i.test(el.value))
+            el.setCustomValidity("Укажи адрес HTTP или HTTPS.");
+          if (!el.reportValidity()) return;
+        }
+        if (section === "routes") {
+          const id = s.editor.id,
+            before = {};
+          for (const k of Object.keys(scopedDraft()))
+            before[k] = ruleBases[id][k];
+          act(
+            "save-rules",
+            JSON.stringify({ before, after: scopedDraft() }),
+            id,
+          );
+        } else act("save-settings", JSON.stringify(scopedDraft()));
+      };
+      $("reconnect").onclick = () => act("reconnect");
+      function didFinish(op) {
+        if (op === "save-settings" || op === "save-rules") {
+          if (op === "save-rules") {
+            delete routeDrafts[s.editor.id];
+            delete ruleBases[s.editor.id];
+          } else delete drafts[section];
+          noticeText = "Изменения сохранены.";
+          renderKey = "";
+        } else if (op === "reconnect") noticeText = "Соединение обновлено.";
+      }
+      function demoAdvanced(op, arg, id) {
+        if (op === "settings") {
+          sample.settings = { ...exampleSettings };
+        }
+        if (op === "save-settings") {
+          const changes = JSON.parse(arg);
+          Object.assign(exampleSettings, changes);
+          sample.settings = { ...exampleSettings };
+          if (
+            sample.active &&
+            Object.keys(changes).some((k) =>
+              /^(tun_|remote_dns|direct_dns|dns_in_port|log_level)/.test(k),
+            )
+          )
+            sample.restart = true;
+        }
+        if (op === "activate-route")
+          previewRoutes.forEach((r) => (r.active = r.in_use = r.id === id));
+        if (op === "save-rules") {
+          Object.assign(exampleRules[id], JSON.parse(arg).after);
+          if (
+            sample.active &&
+            previewRoutes.some((r) => r.id === id && r.in_use)
+          )
+            sample.restart = true;
+        }
+        if (["routes", "activate-route", "save-rules"].includes(op)) {
+          sample.routes = previewRoutes.map((r) => ({ ...r }));
+          if (id < 0) id = previewRoutes.find((r) => r.active).id;
+          sample.editor = {
+            id,
+            editable: true,
+            simple: { ...exampleRules[id] },
+          };
+        }
+        if (op === "reconnect") {
+          sample.since = Math.floor(Date.now() / 1000);
+          sample.restart = false;
+        }
+        if (op === "disconnect" || op === "connect") sample.restart = false;
+        if (op === "logs") {
+          sample.logs = [
+            {
+              time: Math.floor(Date.now() / 1000),
+              text: "Демонстрационный журнал. В приложении здесь появятся записи Throne.",
+            },
+          ];
+        }
+        if (
+          ["save-rules", "save-settings", "mode", "activate-route"].includes(op)
+        )
+          storeExample();
+      }
+
+      showPage("home");
+      paint();
+      (async function tick() {
+        await refresh();
+        if (prefsOpen) loadSection();
+        setTimeout(tick, 430);
+      })();
+    </script>
+  </body>
+</html>
