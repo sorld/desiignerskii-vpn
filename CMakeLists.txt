@@ -217,6 +217,7 @@ set(PROJECT_SOURCES
         src/ui/setting/ThemeManager.cpp
         src/ui/setting/Icon.cpp
 
+        src/ui/mainWindow/mainwindow_home.cpp
         src/ui/mainWindow/mainwindow_setup.cpp
         src/ui/mainWindow/mainwindow_events.cpp
         src/ui/mainWindow/mainwindow_groups.cpp
