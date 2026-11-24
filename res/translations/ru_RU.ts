@@ -9989,6 +9989,26 @@ Improves hole-punching reliability. Requires IPv4.</source>
 <context>
     <name>MainWindow</name>
     <message>
+        <source>Provider name (optional)</source>
+        <translation>Название провайдера (необязательно)</translation>
+    </message>
+    <message>
+        <source>Subscription URL</source>
+        <translation>Ссылка на подписку</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Название</translation>
+    </message>
+    <message>
+        <source>Enter an http or https subscription URL.</source>
+        <translation>Вставь ссылку на подписку, которая начинается с http:// или https://.</translation>
+    </message>
+    <message>
+        <source>This subscription already exists in %1.</source>
+        <translation>Эта подписка уже добавлена в группу «%1».</translation>
+    </message>
+    <message>
         <source>Connect</source>
         <translation>Подключиться</translation>
     </message>
