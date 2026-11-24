@@ -184,7 +184,7 @@ namespace Engine::Bootstrap {
     }
 
     void SetSoftwareNames() {
-        software_name = "Throne";
+        software_name = QStringLiteral("Desiignerskii VPN");
         software_core_name = "sing-box";
     }
 
