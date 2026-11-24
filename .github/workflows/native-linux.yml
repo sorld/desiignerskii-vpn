@@ -1,0 +1,64 @@
+name: Native Linux client
+on: workflow_dispatch
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify desktop source matches the published version
+        run: |
+          git fetch --depth=1 origin refs/tags/native-v0.6.5:refs/tags/native-v0.6.5
+          git diff --exit-code native-v0.6.5 -- CMakeLists.txt cmake include src res core
+      - name: Build GUI and package the Linux runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build patchelf libx11-dev libxcb1-dev libgl1-mesa-dev libxkbcommon-dev libfontconfig-dev
+          bash script/build-native-linux-x64.sh
+      - name: Install package and open desktop on Ubuntu 26.04
+        run: |
+          docker run --rm -v "$PWD:/src:ro" ubuntu:26.04 bash -euc '
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -qq
+            apt-get install -y --no-install-recommends /src/deployment/*.deb xvfb xauth xdotool dbus-daemon libglib2.0-bin python3 fonts-dejavu-core
+            useradd -m -s /bin/bash vpntest
+            runuser -u vpntest -- env HOME=/home/vpntest LANG=C.UTF-8 QT_QPA_PLATFORM=xcb QT_SCALE_FACTOR=1 xvfb-run -a dbus-run-session -- bash /src/script/ci/linux_desktop_smoke.sh
+            apt-get remove -y throne
+            test ! -e /opt/Throne/Throne
+            test ! -e /usr/share/applications/Throne.desktop
+            test -s /home/vpntest/.config/Throne/config/desiignerskii-ui.ini
+          '
+      - name: Verify real traffic through the packaged TUN in a separate network namespace
+        env:
+          E2E_SCENARIOS: tun
+        run: |
+          unzip -q deployment/*-linux-amd64.zip -d "$RUNNER_TEMP/test-linux"
+          export THRONE_DIR="$RUNNER_TEMP/test-linux/Throne"
+          export THRONECTL="$THRONE_DIR/thronectl"
+          bash script/ci/e2e/linux_scenarios.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Desiignerskii-VPN-linux-x64
+          path: |
+            deployment/*-linux-amd64.deb
+            deployment/*-linux-amd64.zip
+          if-no-files-found: error
+          compression-level: 0
+
+  publish:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Desiignerskii-VPN-linux-x64
+          path: dist
+      - name: Add verified Linux packages to the native release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload native-v0.6.5 dist/* --repo "$GITHUB_REPOSITORY"
