@@ -42,6 +42,7 @@ jobs:
               if ($gui.MainWindowHandle -ne 0) { break }
             }
             if ($gui.MainWindowHandle -eq 0) { throw 'Native GUI window did not open' }
+            & ./script/ci/window_views.ps1 -Window $gui.MainWindowHandle -DataDir $dest
           } finally { if (!$gui.HasExited) { Stop-Process -Id $gui.Id -Force; $gui.WaitForExit() } }
           $p = Start-Process "$dest\unins000.exe" -ArgumentList '/VERYSILENT','/NORESTART','/SUPPRESSMSGBOXES' -Wait -PassThru
           if ($p.ExitCode -ne 0 -or (Test-Path "$dest\Throne.exe")) { throw "Uninstall failed: $($p.ExitCode)" }
@@ -66,4 +67,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create native-v0.6.0 dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Desiignerskii VPN 0.6.0" --notes "Нативный клиент для Windows x64. Установка поверх Throne с сохранением профилей. Для каждой подписки можно задать название и автообновление."
+          gh release create native-v0.6.1 dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Desiignerskii VPN 0.6.1" --notes "Основной экран Desiignerskii VPN открывается по умолчанию. Кнопки «Расширенный вид» и «Основной вид» переключают интерфейс на месте и запоминают выбор."
