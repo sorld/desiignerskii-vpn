@@ -372,9 +372,10 @@ private:
           #connectionSettings QWidget { color:%2; font:14px 'Segoe UI'; }
           #connectionSettings QScrollArea, #connectionSettings QWidget#settingsPage,
           #connectionSettings QStackedWidget { background:%1; border:0; }
-          #connectionSettings QListWidget { background:%1; border:0; outline:0; }
+          #connectionSettings QListWidget { background:%1; border:0; border-right:1px solid %4; padding-right:8px; outline:0; }
           #connectionSettings QListWidget::item { padding:9px 6px; border-radius:7px; }
           #connectionSettings QListWidget::item:selected { background:%3; color:%2; }
+          #connectionSettings QLabel { background:transparent; border:0; padding:0; }
           #connectionSettings QLabel#sectionTitle { font-size:23px; font-weight:650; }
           #connectionSettings QLabel#note { color:%5; }
           #connectionSettings QLabel#validation { color:%2; background:%3; padding:6px; }
