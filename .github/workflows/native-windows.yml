@@ -1,0 +1,69 @@
+name: Native Windows client
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  build-and-test:
+    runs-on: windows-2025
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build the native client and installer
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VS=%%i"
+          call "%VS%\VC\Auxiliary\Build\vcvars64.bat" || exit /b 1
+          pwsh -NoProfile -File script\build-native-x64.ps1
+      - name: Install, test subscriptions, uninstall
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = (Get-Item deployment/*-Setup-x64.exe).FullName
+          $dest = "$env:LOCALAPPDATA\Throne"
+          $upstream = "$env:RUNNER_TEMP/Throne-1.4.2-Setup.exe"
+          Invoke-WebRequest 'https://github.com/throneproj/Throne/releases/download/1.4.2/Throne-1.4.2-windows-universal-installer.exe' -OutFile $upstream
+          if ((Get-FileHash $upstream).Hash -ne 'f77a0f87ec936c0f8ef862be4ed1f58ba3e23f52c4d34bc21c5677433eca6ab5') { throw 'Upstream installer checksum mismatch' }
+          $p = Start-Process $upstream -ArgumentList '/CURRENTUSER','/VERYSILENT','/NORESTART','/SUPPRESSMSGBOXES' -PassThru -Wait
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$dest\Throne.exe")) { throw "Install failed: $($p.ExitCode)" }
+          $ctl = (Get-Item deployment/windows-amd64/thronectl.exe).FullName
+          python script/ci/native_subscriptions.py "$dest\Throne.exe" $ctl --data-dir $dest --install-over $setup
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut("$( [Environment]::GetFolderPath('Programs') )\Throne.lnk")
+          if ($shortcut.TargetPath -ne "$dest\Throne.exe") { throw 'Start menu shortcut has incorrect target' }
+          if ((Get-FileHash "$dest\Throne.exe").Hash -ne (Get-FileHash deployment/windows-amd64/Throne.exe).Hash) { throw 'Installed EXE differs from this build' }
+          $gui = Start-Process $shortcut.TargetPath -WorkingDirectory $dest -PassThru
+          try {
+            for ($i=0; $i -lt 40; $i++) {
+              Start-Sleep -Milliseconds 500
+              $gui.Refresh()
+              if ($gui.HasExited) { throw 'Native GUI exited at startup' }
+              if ($gui.MainWindowHandle -ne 0) { break }
+            }
+            if ($gui.MainWindowHandle -eq 0) { throw 'Native GUI window did not open' }
+          } finally { if (!$gui.HasExited) { Stop-Process -Id $gui.Id -Force; $gui.WaitForExit() } }
+          $p = Start-Process "$dest\unins000.exe" -ArgumentList '/VERYSILENT','/NORESTART','/SUPPRESSMSGBOXES' -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or (Test-Path "$dest\Throne.exe")) { throw "Uninstall failed: $($p.ExitCode)" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Desiignerskii-VPN-native-x64
+          path: |
+            deployment/*-Setup-x64.exe
+            deployment/*-windows64.zip
+          if-no-files-found: error
+  release:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Desiignerskii-VPN-native-x64
+          path: dist
+      - name: Publish the tested installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create native-v0.6.0 dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Desiignerskii VPN 0.6.0" --notes "Нативный клиент для Windows x64. Установка поверх Throne с сохранением профилей. Для каждой подписки можно задать название и автообновление."
