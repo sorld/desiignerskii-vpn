@@ -4,9 +4,10 @@
 #include <QComboBox>
 #include <QFrame>
 #include <QPainter>
-#include <QPainterPath>
+#include <QPushButton>
+#include <QVariantAnimation>
 #include <QStyledItemDelegate>
-#include <cmath>
+
 
 namespace ConnectionVisuals {
 
@@ -51,75 +52,74 @@ inline QIcon glyphIcon(Glyph glyph,QColor ink) {
     return icon;
 }
 
-// Render only the visible hemisphere. Cache it since traffic updates do not move the globe.
-class Banner final : public QWidget {
+class PowerButton final : public QPushButton {
 public:
-    using QWidget::QWidget;
-    void setConnected(bool on) {
-        if (linked == on) return;
-        linked = on; artwork = {}; update();
+    explicit PowerButton(QWidget *parent) : QPushButton(parent), spin(this) {
+        setObjectName("power");
+        setFixedSize(196,196);
+        setFocusPolicy(Qt::StrongFocus);
+        setAutoDefault(false);
+        setCursor(Qt::PointingHandCursor);
+        spin.setStartValue(0);
+        spin.setEndValue(360);
+        spin.setLoopCount(-1);
+        spin.setDuration(1200);
+        connect(&spin,&QVariantAnimation::valueChanged,this,[this] { update(); });
     }
+
+    void showState(bool running,bool pending) {
+        if (connected == running && busy == pending) return;
+        connected = running;
+        busy = pending;
+        if (busy) spin.start(); else spin.stop();
+        update();
+    }
+
 protected:
+    bool hitButton(const QPoint &point) const override {
+        return QLineF(QPointF(rect().center()),QPointF(point)).length() <= 84;
+    }
+
     void paintEvent(QPaintEvent *) override {
-        const auto ratio = devicePixelRatioF();
-        const auto pixels = (QSizeF(size()) * ratio).toSize();
-        if (artwork.size() != pixels || artwork.devicePixelRatio() != ratio) {
-            artwork = QPixmap(pixels); artwork.setDevicePixelRatio(ratio); artwork.fill(Qt::transparent);
-            QPainter p(&artwork);
-            p.setRenderHint(QPainter::Antialiasing);
-            QPainterPath clip; clip.addRoundedRect(QRectF(rect()),20,20); p.setClipPath(clip);
-            QLinearGradient base(0,0,width(),height());
-            base.setColorAt(0,QColor("#202a27")); base.setColorAt(1,linked?QColor("#344536"):QColor("#303c37"));
-            p.fillRect(rect(),base);
-            if (width() >= 480) drawGlobe(p);
+        const bool dark = qApp->palette().color(QPalette::Window).lightness() < 128;
+        const QColor accent = dark ? QColor("#c6ef66") : QColor("#507419");
+        const QColor idle = dark ? QColor("#a2aaa1") : QColor("#65715f");
+        const QColor face = dark ? QColor("#252b25") : QColor("#ffffff");
+        const QColor border = dark ? QColor("#434c40") : QColor("#cbd2c6");
+        const bool hover = isEnabled() && underMouse();
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.translate(width()/2.0,height()/2.0);
+        const QRectF ring(-80,-80,160,160);
+        if (hasFocus() && testAttribute(Qt::WA_KeyboardFocusChange)) {
+            p.setBrush(Qt::NoBrush);
+            p.setPen(QPen(accent,1.5,Qt::DashLine));
+            p.drawEllipse(ring.adjusted(-8,-8,8,8));
         }
-        QPainter target(this); target.drawPixmap(0,0,artwork);
+        if (isDown()) p.scale(0.97,0.97);
+        if (connected || busy) {
+            QColor halo = accent; halo.setAlpha(dark ? 45 : 28);
+            QRadialGradient glow(QPointF(0,0),94);
+            glow.setColorAt(0.82,halo);
+            halo.setAlpha(0); glow.setColorAt(1.0,halo);
+            p.setPen(Qt::NoPen); p.setBrush(glow); p.drawEllipse(QPointF(0,0),94,94);
+        }
+        p.setBrush(hover ? (dark ? face.lighter(114) : face.darker(102)) : face);
+        p.setPen(QPen(connected ? accent : hover ? idle : border,3));
+        p.drawEllipse(ring);
+        if (busy) {
+            p.setPen(QPen(accent,3,Qt::SolidLine,Qt::RoundCap));
+            p.drawArc(ring, (90-spin.currentValue().toInt())*16,-100*16);
+        }
+        QColor symbol = connected || busy ? accent : idle;
+        if (!isEnabled() && !busy) symbol.setAlpha(105);
+        drawGlyph(p,Glyph::Power,QRectF(-31,-31,62,62),symbol);
     }
+
 private:
-    void drawGlobe(QPainter &p) const {
-        const double radius = qMin(height()*0.79,width()*0.205);
-        const QPointF center(width()-radius*0.60,height()*0.53);
-        p.save(); p.translate(center); p.rotate(-19);
-        const QRectF disc(-radius,-radius,2*radius,2*radius);
-        QRadialGradient glow(-radius*0.58,-radius*0.48,radius*1.85);
-        glow.setColorAt(0,linked?QColor("#789260"):QColor("#586d5c"));
-        glow.setColorAt(0.64,QColor("#455947")); glow.setColorAt(1,QColor("#29392e"));
-        p.setBrush(glow); p.setPen(QPen(QColor(190,214,159,110),1)); p.drawEllipse(disc);
-        const double tilt = 0.36;
-        auto point=[=](double lat,double lon,double &depth) {
-            const double x=std::cos(lat)*std::sin(lon), y=std::sin(lat), z=std::cos(lat)*std::cos(lon);
-            depth=y*std::sin(tilt)+z*std::cos(tilt);
-            return QPointF(radius*x,-radius*(y*std::cos(tilt)-z*std::sin(tilt)));
-        };
-        const double rad=std::acos(-1.0)/180.0;
-        p.setBrush(Qt::NoBrush); p.setPen(QPen(QColor(192,212,171,87),0.85));
-        auto line=[&](bool meridian,int constant) {
-            QPainterPath path; bool visible=false;
-            for(int t=meridian?-90:-180; t<=(meridian?90:180);t+=2) {
-                double depth;
-                QPointF v=point((meridian?t:constant)*rad,(meridian?constant:t)*rad,depth);
-                if(depth>=0) { if(visible) path.lineTo(v); else path.moveTo(v); }
-                visible=depth>=0;
-            }
-            p.drawPath(path);
-        };
-        for(int lon=-180;lon<180;lon+=15) line(true,lon);
-        for(int lat=-75;lat<=75;lat+=15) line(false,lat);
-        if(linked) {
-            double z; const auto start=point(4*rad,-57*rad,z), end=point(47*rad,-5*rad,z);
-            QPainterPath link(start); link.quadTo((start+end)*0.5+QPointF(-radius*0.05,-radius*0.2),end);
-            p.setPen(QPen(QColor("#d5fa8a"),2.0)); p.drawPath(link);
-            p.setPen(Qt::NoPen); p.setBrush(QColor(210,250,140,55)); p.drawEllipse(end,9,9);
-            p.setBrush(QColor("#e0ffab")); p.drawEllipse(end,3.6,3.6); p.drawEllipse(start,2.6,2.6);
-        }
-        p.restore();
-        // Fade the drawing into the control area on smaller windows.
-        QLinearGradient shade(0,0,width(),0);
-        shade.setColorAt(0,QColor("#202a27")); shade.setColorAt(0.48,QColor("#232e29"));
-        shade.setColorAt(0.72,QColor(35,46,41,0)); p.fillRect(rect(),shade);
-    }
-    bool linked=false;
-    QPixmap artwork;
+    QVariantAnimation spin;
+    bool connected = false;
+    bool busy = false;
 };
 
 class SubscriptionPicker final : public QComboBox {

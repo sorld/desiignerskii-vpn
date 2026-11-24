@@ -37,7 +37,7 @@ public:
         auto *barLayout=new QHBoxLayout(bar);
         barLayout->setContentsMargins(20,0,20,0);
         auto *head=new QWidget(bar);
-        head->setMaximumWidth(832);
+        head->setMaximumWidth(760);
         auto *header=new QHBoxLayout(head);
         header->setContentsMargins(0,12,0,12);
         header->setSpacing(8);
@@ -57,36 +57,30 @@ public:
         auto *page=new QWidget(scroll);
         auto *alignment=new QHBoxLayout(page);
         alignment->setContentsMargins(20,0,20,0); alignment->setSpacing(0);
-        auto *column=new QWidget(page); column->setMaximumWidth(832);
+        auto *column=new QWidget(page); column->setMaximumWidth(568);
         alignment->addStretch(); alignment->addWidget(column,100); alignment->addStretch();
         auto *body=new QVBoxLayout(column);
         body->setContentsMargins(0,24,0,22); body->setSpacing(0);
-        banner=new ConnectionVisuals::Banner(column);
-        banner->setMinimumHeight(208);
-        auto *hero=new QVBoxLayout(banner);
-        hero->setContentsMargins(26,20,26,22); hero->setSpacing(0);
-        mode=text({},"mode");
-        hero->addWidget(mode);
-        hero->addSpacing(9);
-        state=text({},"state");
-        hero->addWidget(state);
-        detail=text({},"location");
+        power = new ConnectionVisuals::PowerButton(column);
+        body->addWidget(power,0,Qt::AlignHCenter);
+        state = text({}, "state");
+        state->setAlignment(Qt::AlignCenter);
+        body->addWidget(state);
+        detail = text({}, "location");
+        detail->setAlignment(Qt::AlignCenter);
         detail->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
-        hero->addWidget(detail);
-        hero->addStretch();
-        auto *actionRow=new QHBoxLayout;
-        power=button("Подключить",actionRow); power->setObjectName("power");
-        actionRow->addStretch(); hero->addLayout(actionRow);
-        body->addWidget(banner);
+        body->addSpacing(5);
+        body->addWidget(detail);
         stats=new QWidget(column); auto *numbers=new QHBoxLayout(stats);
-        numbers->setContentsMargins(2,14,2,13); numbers->setSpacing(8);
+        numbers->setContentsMargins(0,8,0,0); numbers->setSpacing(6);
+        numbers->addStretch();
         numbers->addWidget(text("Принято","statLabel"));
         down=text({},"statValue"); numbers->addWidget(down);
         numbers->addSpacing(18);
         numbers->addWidget(text("Отправлено","statLabel"));
         up=text({},"statValue"); numbers->addWidget(up);
         numbers->addStretch(); body->addWidget(stats);
-        body->addSpacing(18);
+        body->addSpacing(28);
         auto *titleRow=new QHBoxLayout;
         titleRow->addWidget(text("Серверы","heading")); titleRow->addStretch();
         add=button("Добавить подписку",titleRow);
@@ -102,7 +96,10 @@ public:
         filterRow->addWidget(groups);
         refresh=button({},filterRow);
         refresh->setFixedSize(34,34); refresh->setAccessibleName("Обновить подписку"); refresh->setToolTip("Обновить подписку");
-        filterRow->addStretch(); body->addLayout(filterRow); body->addSpacing(8);
+        filterRow->addStretch();
+        switchServer=button("Сменить сервер",filterRow);
+        switchServer->hide();
+        body->addLayout(filterRow); body->addSpacing(8);
         servers=new QListWidget(column);
         servers->setObjectName("serverEntries");
         servers->setAccessibleName("Серверы");
@@ -132,9 +129,8 @@ public:
             #connectionHome QWidget#appBar {background:%1;border:0;border-bottom:1px solid %4;}
             #connectionHome QLabel {border:0;font:14px 'Segoe UI';padding:0;margin:0;}
             #connectionHome QLabel#wordmark {font-size:17px;font-weight:700;}
-            #connectionHome QLabel#mode {color:#c4d4c3;font-size:13px;font-weight:600;}
-            #connectionHome QLabel#state {color:#fafdf8;font-size:36px;font-weight:650;}
-            #connectionHome QLabel#location {color:#d2dbd2;font-size:15px;}
+            #connectionHome QLabel#state {color:%2;font-size:29px;font-weight:650;}
+            #connectionHome QLabel#location {color:%3;font-size:14px;}
             #connectionHome QLabel#heading {font-size:24px;font-weight:650;}
             #connectionHome QLabel#muted,#connectionHome QLabel#statLabel {color:%3;font-size:13px;}
             #connectionHome QLabel#statValue {color:%2;font-size:14px;font-weight:600;}
@@ -147,16 +143,13 @@ public:
             #connectionHome QPushButton:hover,#connectionHome QComboBox:hover {background:%6;}
             #connectionHome QPushButton:focus,#connectionHome QComboBox:focus {border:1px solid %3;}
             #connectionHome QPushButton:disabled {color:%3;}
-            #connectionHome QPushButton#power {background:#d2f793;color:#1c2719;font-weight:650;border-radius:11px;padding:8px 15px;min-height:21px;}
-            #connectionHome QPushButton#power:hover {background:#e1ffb0;}
-            #connectionHome QPushButton#power:focus {border:1px solid white;}
-            #connectionHome QPushButton#power:disabled {background:#414d42;color:#c2cec2;}
+            #connectionHome QPushButton#power {min-height:196px;max-height:196px;padding:0;border:0;background:transparent;}
             #connectionHome QListWidget,#connectionHome QListWidget > QWidget {background:transparent;border:0;outline:none;padding:0;margin:0;}
             #connectionHome QMenu,#connectionHome QComboBox QAbstractItemView {background:%1;color:%2;border:1px solid %4;selection-background-color:%6;selection-color:%2;}
             #connectionHome QMenu::item:selected {background:%6;color:%2;}
         )").arg(bg,ink,muted,line,well,highlight));
         using namespace ConnectionVisuals;
-        power->setIcon(glyphIcon(Glyph::Power,QColor("#1c2719")));
+        power->update();
         preferences->setIcon(glyphIcon(Glyph::Settings,QColor(ink)));
         add->setIcon(glyphIcon(Glyph::Plus,QColor(ink)));
         refresh->setIcon(glyphIcon(Glyph::Refresh,QColor(muted)));
@@ -236,16 +229,20 @@ public:
         if (cfg->spmode_vpn) modes << "TUN";
         if (cfg->spmode_system_proxy) modes << "Системный прокси";
         if (modes.isEmpty()) modes << "Локальный прокси";
-        mode->setText("Соединение   ·   " + modes.join(" + "));
         QString location;
         if (running && profile) location = profile->name;
         else if (servers->currentItem()) location = servers->currentItem()->text();
-        detail->setToolTip(location);
-        const int labelWidth = qMax(160,int(banner->width()*0.62));
-        detail->setText(detail->fontMetrics().elidedText(location,Qt::ElideRight,labelWidth));
-        banner->setConnected(running);
-        const bool switchServer = running && profile && selected >= 0 && profile->id != selected;
-        power->setText(switchServer ? "Сменить сервер" : running ? "Отключить" : "Подключить");
+        const QString description = location.isEmpty() ? modes.join(" + ")
+                : location + "  ·  " + modes.join(" + ");
+        detail->setToolTip(description);
+        detail->setText(detail->fontMetrics().elidedText(description,Qt::ElideRight,qMax(160,detail->width()-8)));
+        const QString action = busy ? state->text() : running ? "Отключить" : "Подключить";
+        power->setText(action);
+        power->setAccessibleName(action);
+        power->setToolTip(action);
+        power->showState(running,busy);
+        const bool canSwitch = running && profile && selected >= 0 && profile->id != selected;
+        switchServer->setVisible(canSwitch);
         power->setEnabled(!busy && (running || selected >= 0));
         stats->setVisible(running && bool(profile));
         if (profile) {
@@ -258,12 +255,12 @@ public:
         }
     }
 
-    ConnectionVisuals::Banner *banner;
+    ConnectionVisuals::PowerButton *power;
     QWidget *stats;
-    QLabel *mode,*down,*up;
+    QLabel *down,*up;
     QComboBox *groups;
     QListWidget *servers;
-    QPushButton *preferences, *advanced, *power, *add, *refresh;
+    QPushButton *preferences, *advanced, *switchServer, *add, *refresh;
     QLabel *state, *detail, *empty;
     QSettings *settings;
 
@@ -348,12 +345,13 @@ void MainWindow::setupConnectionHome() {
         update();
     });
     connect(home->power,&QPushButton::clicked,this,[this,home] {
-        const auto current = runningSnapshot();
-        if (connection()->connectionState() == Engine::ConnectionState::Running &&
-            (home->selectedId() < 0 || (current && current->id == home->selectedId())))
+        if (connection()->connectionState() == Engine::ConnectionState::Running)
             profile_stop(false,false,true);
         else if (home->selectedId() >= 0)
             profile_start(home->selectedId());
+    });
+    connect(home->switchServer,&QPushButton::clicked,this,[this,home] {
+        if (home->selectedId() >= 0) profile_start(home->selectedId());
     });
     auto *events = Engine::EngineEvents::instance();
     const auto reload = [home,stack,update] {
