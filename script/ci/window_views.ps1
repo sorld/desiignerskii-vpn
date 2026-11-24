@@ -29,25 +29,46 @@ function Assert-ViewSaved([string]$Mode) {
 Assert-ViewSaved 'home'
 $windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($Window)
 $homeWidth = $windowElement.Current.BoundingRectangle.Width
-Invoke-ViewButton 'Настройки'
 Add-Type -TypeDefinition @'
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 public static class ConnectionPrefsWindows {
-    [DllImport("user32.dll", CharSet=CharSet.Unicode)]
-    public static extern IntPtr FindWindow(string className, string windowName);
+    private delegate bool WindowCallback(IntPtr window, IntPtr data);
+    [DllImport("user32.dll")] private static extern bool EnumWindows(WindowCallback callback, IntPtr data);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
+    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
+    public static IntPtr[] VisibleFor(uint processId) {
+        var result = new List<IntPtr>();
+        EnumWindows((window, data) => {
+            uint owner;
+            GetWindowThreadProcessId(window, out owner);
+            if (owner == processId && IsWindowVisible(window)) result.Add(window);
+            return true;
+        }, IntPtr.Zero);
+        return result.ToArray();
+    }
 }
 '@
-$dialogHandle = [IntPtr]::Zero
-for ($i=0; $i -lt 50 -and $dialogHandle -eq [IntPtr]::Zero; $i++) {
-    $dialogHandle = [ConnectionPrefsWindows]::FindWindow($null, 'Настройки · Desiignerskii VPN')
-    if ($dialogHandle -eq [IntPtr]::Zero) { Start-Sleep -Milliseconds 100 }
+$processId = $windowElement.Current.ProcessId
+$sectionName = [System.Windows.Automation.PropertyCondition]::new(
+    [System.Windows.Automation.AutomationElement]::NameProperty, 'Разделы настроек')
+Invoke-ViewButton 'Настройки клиента'
+$dialog = $null
+for ($i=0; $i -lt 40 -and !$dialog; $i++) {
+    $titles = @()
+    foreach ($handle in [ConnectionPrefsWindows]::VisibleFor($processId)) {
+        $candidate = [System.Windows.Automation.AutomationElement]::FromHandle($handle)
+        $titles += $candidate.Current.Name
+        $sections = $candidate.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$sectionName)
+        if ($sections -and !$sections.Current.IsOffscreen) {
+            $dialog = $candidate
+            break
+        }
+    }
+    if (!$dialog) { Start-Sleep -Milliseconds 250 }
 }
-if ($dialogHandle -eq [IntPtr]::Zero) { throw 'Settings window did not open' }
-$dialog = [System.Windows.Automation.AutomationElement]::FromHandle($dialogHandle)
-$sectionList = $dialog.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
-    [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty, 'Разделы настроек'))
-if (!$sectionList) { throw 'Settings navigation missing' }
+if (!$dialog) { throw "Settings navigation missing. Visible client windows: $($titles -join ' | ')" }
 $cancel = $dialog.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
     [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty, 'Отмена'))
 $cancel.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
