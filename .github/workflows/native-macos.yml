@@ -1,0 +1,73 @@
+name: Native macOS client
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify client sources
+        run: |
+          git fetch --depth=1 origin refs/tags/native-v0.6.5:refs/tags/native-v0.6.5
+          git diff --exit-code native-v0.6.5 -- cmake CMakeLists.txt src core include res
+      - uses: jurplel/install-qt-action@v4.5.0
+        with:
+          version: '6.12.0'
+          cache: true
+      - name: Build universal application and disk image
+        run: bash script/build-native-macos.sh
+      - uses: actions/checkout@v4
+        with:
+          repository: throneproj/Throne-api
+          ref: b5758e3ca341aab6d4124aedc4d04845ca1ab069
+          path: control-api
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: control-api/go.mod
+          cache: false
+      - name: Test the app from the disk image
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd control-api && go build -trimpath -o "$RUNNER_TEMP/thronectl" ./cmd/thronectl)
+          volume="$RUNNER_TEMP/dmg"
+          mkdir -p "$volume" "$RUNNER_TEMP/mac-install"
+          hdiutil verify deployment/*.dmg
+          hdiutil attach -nobrowse -readonly -mountpoint "$volume" deployment/*.dmg
+          test "$(readlink "$volume/Applications")" = /Applications
+          app="$RUNNER_TEMP/mac-install/Desiignerskii VPN.app"
+          ditto "$volume/Desiignerskii VPN.app" "$app"
+          hdiutil detach "$volume"
+          codesign --verify --deep --strict "$app"
+          bin="$app/Contents/MacOS/Throne"
+          for cpu in arm64 x86_64; do
+            /usr/bin/arch -"$cpu" "$bin" --headless --version | grep -F '0.6.5'
+          done
+          python3 script/ci/native_subscriptions.py "$bin" "$RUNNER_TEMP/thronectl"
+          open -n "$app" --args -appdata "$RUNNER_TEMP/mac-profile"
+          for attempt in {1..40}; do
+            if pgrep -x Throne >/dev/null && grep -q 'view=home' "$RUNNER_TEMP/mac-profile/config/desiignerskii-ui.ini" 2>/dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal
+          path: deployment/*.dmg
+          if-no-files-found: error
+          compression-level: 0
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-universal
+          path: dist
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload native-v0.6.5 dist/*.dmg --repo "$GITHUB_REPOSITORY"
