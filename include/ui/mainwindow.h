@@ -534,6 +534,7 @@ private:
 
     void setupConnectionList();
 
+    void setupConnectionHome();
     void setupTrafficGraph();
 
     void refresh_traffic_graph_settings();
