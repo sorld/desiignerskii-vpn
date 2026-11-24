@@ -14,21 +14,33 @@
   #define AppVersionBuild "0"
 #endif
 
+#ifdef DesiignerskiiX64
+  #define DisplayName "Desiignerskii VPN"
+#else
+  #define DisplayName "Throne"
+#endif
+
 [Setup]
 AppId={{29950A94-3C8D-4043-9E00-36AB69F78042}
-AppName=Throne
+AppName={#DisplayName}
 AppVersion={#AppVersion}
-AppVerName=Throne {#AppVersion}
-AppPublisher=Throne
+AppVerName={#DisplayName} {#AppVersion}
+AppPublisher={#DisplayName}
 VersionInfoVersion={#AppVersionMajor}.{#AppVersionMinor}.{#AppVersionPatch}.{#AppVersionBuild}
-VersionInfoProductName=Throne
-VersionInfoDescription=Throne Setup
+VersionInfoProductName={#DisplayName}
+VersionInfoDescription={#DisplayName} Setup
 VersionInfoCopyright=Throne
 SourceDir=..
 OutputDir=deployment
+#ifdef DesiignerskiiX64
+OutputBaseFilename=Desiignerskii-VPN-{#AppVersion}-Setup-x64
+ArchitecturesAllowed=x64compatible
+MinVersion=10.0.17763
+#else
 OutputBaseFilename=ThroneSetup
+#endif
 SetupIconFile=res\Throne.ico
-UninstallDisplayName=Throne
+UninstallDisplayName={#DisplayName}
 UninstallDisplayIcon={app}\Throne.exe
 WizardStyle=modern
 PrivilegesRequired=lowest
@@ -53,9 +65,12 @@ SelectDirBrowseLabel=To continue, click Next. If the folder you choose is not na
 
 [Files]
 Source: "deployment\windows-amd64\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion; Check: IsX64OS; MinVersion: 10.0.17763
+#ifndef DesiignerskiiX64
 Source: "deployment\windowslegacy-amd64\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion; Check: IsX64OS; OnlyBelowVersion: 10.0.17763
 Source: "deployment\windows-arm64\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion; Check: IsArm64
 Source: "deployment\windowslegacy-386\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion; Check: IsX86OS
+
+#endif
 
 [Icons]
 Name: "{autoprograms}\Throne"; Filename: "{app}\Throne.exe"
@@ -68,7 +83,7 @@ Root: HKA; Subkey: "Software\Throne"; ValueType: string; ValueName: "InstallPath
 Type: files; Name: "{app}\updater.old"
 
 [Run]
-Filename: "{app}\Throne.exe"; Description: "{cm:LaunchProgram,Throne}"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\Throne.exe"; Description: "{cm:LaunchProgram,{#DisplayName}}"; Flags: postinstall nowait skipifsilent
 
 [UninstallRun]
 ; Removes this user's elevated-core task and protected ThroneCore copy; asks for UAC only when there is one.
@@ -250,7 +265,7 @@ begin
     RemoveCrashDumpKey('Throne.exe');
     RemoveCrashDumpKey('ThroneCore.exe');
     DeleteUserData := SuppressibleMsgBox('Also delete your Throne profiles, settings and logs?' + #13#10#13#10 +
-      'Choose No if you plan to reinstall Throne later and want to keep them.', mbConfirmation, MB_YESNO, IDYES) = IDYES;
+      'Choose No if you plan to reinstall Throne later and want to keep them.', mbConfirmation, MB_YESNO or MB_DEFBUTTON2, IDNO) = IDYES;
   end
   else if (CurUninstallStep = usPostUninstall) and DeleteUserData then
   begin
