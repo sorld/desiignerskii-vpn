@@ -42,31 +42,45 @@ install -m 0644 "$DIST/throne.env" "$PKG/etc/throne/throne.env"
 install -m 0644 "$DIST/throne-web.env" "$PKG/etc/throne/web.env"
 printf '%s\n' /etc/throne/throne.env /etc/throne/web.env >"$PKG/DEBIAN/conffiles"
 
-# basic
+deb_version=$VERSION
+maintainer='Mahdi <Mahdi.zrei@gmail.com>'
+description='Qt based cross-platform GUI proxy configuration manager (backend: sing-box)'
+desktop_name=Throne
+desktop_exec='sh -c "PATH=/opt/Throne:$PATH /opt/Throne/Throne -appdata"'
+if [[ ${3:-} == desiignerskii ]]; then
+    # Preserve upgrades from Throne 1.4.2, its config directory and the installed application path.
+    deb_version="1.4.2+ds${VERSION}"
+    maintainer='Sorld <sorld@users.noreply.github.com>'
+    description='Desiignerskii VPN desktop client based on Throne'
+    desktop_name='Desiignerskii VPN'
+    desktop_exec='/opt/Throne/Throne -appdata'
+    DEPENDS+=", pkexec, libstdc++6, libxkbcommon-x11-0, libxcb-render0, libxcb-icccm4, libxcb-image0, libxcb-keysyms1, libxcb-randr0, libxcb-render-util0, libxcb-shape0, libxcb-shm0, libxcb-sync1, libxcb-xfixes0, libxcb-xkb1, libwayland-client0, libwayland-cursor0"
+fi
 cat >"$PKG/DEBIAN/control" <<-EOF
 Package: throne
-Version: $VERSION
+Version: $deb_version
 Architecture: $ARCH
-Maintainer: Mahdi <Mahdi.zrei@gmail.com>
+Maintainer: $maintainer
 Depends: $DEPENDS
-Description: Qt based cross-platform GUI proxy configuration manager (backend: sing-box)
+Description: $description
+EOF
+
+mkdir -p "$PKG/usr/share/applications"
+cat >"$PKG/usr/share/applications/Throne.desktop" <<-EOF
+[Desktop Entry]
+Name=$desktop_name
+Comment=$description
+Exec=$desktop_exec
+Icon=/opt/Throne/Throne.png
+Terminal=false
+Type=Application
+Categories=Network;
+StartupWMClass=Throne
 EOF
 
 # Maintainer scripts never fail the transaction, and touch systemd only when it is running (not in a chroot or container).
 cat >"$PKG/DEBIAN/postinst" <<-'EOF'
 #!/bin/sh
-mkdir -p /usr/share/applications
-cat >/usr/share/applications/Throne.desktop<<-END
-[Desktop Entry]
-Name=Throne
-Comment=Qt based cross-platform GUI proxy configuration manager (backend: sing-box)
-Exec=sh -c "PATH=/opt/Throne:$PATH /opt/Throne/Throne -appdata"
-Icon=/opt/Throne/Throne.png
-Terminal=false
-Type=Application
-Categories=Network;Application;
-END
-
 update-desktop-database >/dev/null 2>&1 || true
 
 # $2 is the previously configured version: set on upgrade, empty on a fresh install.
@@ -96,9 +110,7 @@ EOF
 
 cat >"$PKG/DEBIAN/postrm" <<-'EOF'
 #!/bin/sh
-# postinst writes the launcher outside the package's file list, so it goes with the package.
 if [ "$1" = remove ] || [ "$1" = purge ]; then
-    rm -f /usr/share/applications/Throne.desktop
     command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database >/dev/null 2>&1 || true
 fi
 if [ -d /run/systemd/system ]; then
