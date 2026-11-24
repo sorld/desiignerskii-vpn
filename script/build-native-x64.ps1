@@ -1,7 +1,7 @@
 # Run from a Visual Studio x64 developer shell with CMake, Ninja, 7-Zip and Inno Setup 6.
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path "$PSScriptRoot/..").Path
-$version = '0.6.1'
+$version = '0.6.2'
 $build = Join-Path $root 'build-native'
 $cache = Join-Path $build 'downloads'
 $stage = Join-Path $root 'deployment/windows-amd64'
@@ -47,4 +47,4 @@ Copy-Item "$stage/*" $portable -Force
 Compress-Archive -Path $portable -DestinationPath $zip -Force
 $iscc = Get-Command 'iscc.exe' -ErrorAction SilentlyContinue
 if ($iscc) { $compiler = $iscc.Source } else { $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
-Run-Checked $compiler @('/Qp','/DDesiignerskiiX64=1',"/DAppVersion=$version",'/DAppVersionMajor=0','/DAppVersionMinor=6','/DAppVersionPatch=1',"$root/script/windows_installer.iss")
+Run-Checked $compiler @('/Qp','/DDesiignerskiiX64=1',"/DAppVersion=$version",'/DAppVersionMajor=0','/DAppVersionMinor=6','/DAppVersionPatch=2',"$root/script/windows_installer.iss")
