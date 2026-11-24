@@ -9,13 +9,20 @@ build="$work/build"
 disk="$work/disk"
 app="$disk/Desiignerskii VPN.app"
 mkdir -p "$build" "$disk" "$root/deployment"
-curl -fsSL --retry 3 https://raw.githubusercontent.com/throneproj/routeprofiles/2faa1c8cd18fa1e3d4b931ab9864c08fe629db25/srslist.h -o "$build/srslist.h"
-git init -q "$work/dashboard"
-git -C "$work/dashboard" fetch -q --depth=1 https://github.com/SagerNet/sing-box-dashboard.git d77c2f016a7681aa1704e9f83c69139edb230c97
-git -C "$work/dashboard" archive FETCH_HEAD | tar -xf - -C "$root/res/dashboard"
-cmake -S "$root" -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DINPUT_VERSION="$version" -DNKR_PACKAGE_MACOS=1 \
-    -DCMAKE_OSX_DEPLOYMENT_TARGET=14.4 '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64'
-cmake --build "$build" --target Throne --parallel 3
+if [[ -n "${NATIVE_MAC_GUI_ARCHIVE:-}" && -f "$NATIVE_MAC_GUI_ARCHIVE" ]]; then
+    tar -xf "$NATIVE_MAC_GUI_ARCHIVE" -C "$build"
+else
+    curl -fsSL --retry 3 https://raw.githubusercontent.com/throneproj/routeprofiles/2faa1c8cd18fa1e3d4b931ab9864c08fe629db25/srslist.h -o "$build/srslist.h"
+    git init -q "$work/dashboard"
+    git -C "$work/dashboard" fetch -q --depth=1 https://github.com/SagerNet/sing-box-dashboard.git d77c2f016a7681aa1704e9f83c69139edb230c97
+    git -C "$work/dashboard" archive FETCH_HEAD | tar -xf - -C "$root/res/dashboard"
+    cmake -S "$root" -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DINPUT_VERSION="$version" -DNKR_PACKAGE_MACOS=1 \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=14.4 '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64'
+    cmake --build "$build" --target Throne --parallel "$(sysctl -n hw.logicalcpu)"
+    if [[ -n "${NATIVE_MAC_GUI_ARCHIVE:-}" ]]; then
+        tar -cf "$NATIVE_MAC_GUI_ARCHIVE" -C "$build" Throne.app
+    fi
+fi
 mv "$build/Throne.app" "$app"
 bin="$app/Contents/MacOS"
 for arch in amd64 arm64; do
@@ -30,6 +37,7 @@ done
 lipo -create "$work/core-amd64" "$work/core-arm64" -output "$bin/ThroneCore"
 chmod 755 "$bin/ThroneCore"
 macdeployqt "$app" -always-overwrite -verbose=1
+test -f "$app/Contents/Frameworks/QtCore.framework/Versions/A/QtCore"
 plist="$app/Contents/Info.plist"
 plutil -replace CFBundleIdentifier -string pro.desiignerskii.vpn "$plist"
 plutil -replace CFBundleURLTypes.0.CFBundleURLName -string pro.desiignerskii.vpn "$plist"
@@ -49,7 +57,7 @@ codesign --force --sign - "$bin/ThroneCore"
 codesign --force --deep --sign - "$app"
 codesign --verify --deep --strict "$app"
 while IFS= read -r -d '' binary; do
-    if file -b "$binary" | grep 'Mach-O' >/dev/null; then lipo -verify_arch arm64 x86_64 "$binary"; fi
+    if file -b "$binary" | grep 'Mach-O' >/dev/null; then lipo "$binary" -verify_arch arm64 x86_64; fi
 done < <(find "$app" -type f -print0)
 ln -s /Applications "$disk/Applications"
 hdiutil create -quiet -fs HFS+ -format UDZO -volname 'Desiignerskii VPN' -srcfolder "$disk" "$root/deployment/Desiignerskii-VPN-$version-macOS.dmg"
