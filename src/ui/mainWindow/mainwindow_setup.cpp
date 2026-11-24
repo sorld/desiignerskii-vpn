@@ -1013,6 +1013,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         refreshScannerDataView(true);
     }, Qt::QueuedConnection);
 
+    setupConnectionHome();
     if (!Configs::dataManager->settingsRepo->flag_tray) show();
     else if (tray->isVisible()) HideWindow(this);
 
