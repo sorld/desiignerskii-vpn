@@ -287,7 +287,7 @@ void MainWindow::refresh_status(const QString &traffic_update) {
         return tt.join(isTray ? "\n" : " ");
     };
 
-    setWindowTitle(make_title(false));
+    setWindowTitle(primaryViewVisible ? QStringLiteral("Desiignerskii VPN") : make_title(false));
     if (tray != nullptr) tray->setToolTip(make_title(true));
 
     refresh_startstop_button();

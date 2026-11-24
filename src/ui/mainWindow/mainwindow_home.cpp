@@ -1,4 +1,8 @@
 #include "include/ui/mainwindow.h"
+#include "connection_visuals.hpp"
+#include "include/ui/setting/ThemeManager.hpp"
+
+#include <QScrollArea>
 #include "include/configs/sub/GroupUpdater.hpp"
 #include "include/database/GroupsRepo.h"
 #include "include/database/ProfilesRepo.h"
@@ -24,87 +28,139 @@ class ConnectionHome final : public QWidget {
 public:
     explicit ConnectionHome(QWidget *parent) : QWidget(parent) {
         setObjectName("connectionHome");
+        setAttribute(Qt::WA_StyledBackground,true);
         auto *outer = new QVBoxLayout(this);
-        outer->setContentsMargins(28, 20, 28, 20);
-        auto *header = new QHBoxLayout;
-        auto *mark = new QLabel(this);
-        mark->setPixmap(QIcon(":/Throne/Throne.png").pixmap(28,28));
+        outer->setContentsMargins(0,0,0,0);
+        outer->setSpacing(0);
+        auto *bar=new QWidget(this);
+        bar->setObjectName("appBar");
+        auto *barLayout=new QHBoxLayout(bar);
+        barLayout->setContentsMargins(20,0,20,0);
+        auto *head=new QWidget(bar);
+        head->setMaximumWidth(832);
+        auto *header=new QHBoxLayout(head);
+        header->setContentsMargins(0,12,0,12);
+        header->setSpacing(8);
+        auto *mark=new QLabel(head);
+        mark->setPixmap(QIcon(":/Throne/Throne.png").pixmap(QSize(30,30),devicePixelRatioF()));
         header->addWidget(mark);
-        header->addWidget(text("Desiignerskii VPN", "wordmark"));
-        header->addStretch();
-        preferences = button("Настройки", header);
-        advanced = button("Расширенный вид", header);
-        outer->addLayout(header);
-        auto *center = new QHBoxLayout;
-        auto *content = new QWidget(this);
-        content->setMaximumWidth(920);
-        center->addStretch();
-        center->addWidget(content, 9);
-        center->addStretch();
-        outer->addLayout(center, 1);
+        header->addWidget(text("Desiignerskii VPN","wordmark")); header->addStretch();
+        preferences=button({},header);
+        preferences->setAccessibleName("Настройки"); preferences->setToolTip("Настройки"); preferences->setFixedSize(36,36);
+        advanced=button("Расширенный вид",header);
+        barLayout->addStretch(); barLayout->addWidget(head,100); barLayout->addStretch();
+        outer->addWidget(bar);
 
-        auto *body = new QVBoxLayout(content);
-        body->setContentsMargins(0, 24, 0, 0);
-        body->setSpacing(12);
-        auto *summary = new QHBoxLayout;
-        auto *copy = new QVBoxLayout;
-        state = text({}, "state");
-        detail = text({}, "muted");
-        copy->addWidget(state);
-        copy->addWidget(detail);
-        summary->addLayout(copy,1);
-        power = button("Подключить", summary);
-        power->setObjectName("power");
-        body->addLayout(summary);
-        body->addSpacing(12);
-        auto *titleRow = new QHBoxLayout;
-        titleRow->addWidget(text("Серверы", "heading"));
-        titleRow->addStretch();
-        add = button("Добавить подписку", titleRow);
+        auto *scroll=new QScrollArea(this);
+        scroll->setFrameShape(QFrame::NoFrame);
+        scroll->setWidgetResizable(true); scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        auto *page=new QWidget(scroll);
+        auto *alignment=new QHBoxLayout(page);
+        alignment->setContentsMargins(20,0,20,0); alignment->setSpacing(0);
+        auto *column=new QWidget(page); column->setMaximumWidth(832);
+        alignment->addStretch(); alignment->addWidget(column,100); alignment->addStretch();
+        auto *body=new QVBoxLayout(column);
+        body->setContentsMargins(0,24,0,22); body->setSpacing(0);
+        banner=new ConnectionVisuals::Banner(column);
+        banner->setMinimumHeight(208);
+        auto *hero=new QVBoxLayout(banner);
+        hero->setContentsMargins(26,20,26,22); hero->setSpacing(0);
+        mode=text({},"mode");
+        hero->addWidget(mode);
+        hero->addSpacing(9);
+        state=text({},"state");
+        hero->addWidget(state);
+        detail=text({},"location");
+        detail->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
+        hero->addWidget(detail);
+        hero->addStretch();
+        auto *actionRow=new QHBoxLayout;
+        power=button("Подключить",actionRow); power->setObjectName("power");
+        actionRow->addStretch(); hero->addLayout(actionRow);
+        body->addWidget(banner);
+        stats=new QWidget(column); auto *numbers=new QHBoxLayout(stats);
+        numbers->setContentsMargins(2,14,2,13); numbers->setSpacing(8);
+        numbers->addWidget(text("Принято","statLabel"));
+        down=text({},"statValue"); numbers->addWidget(down);
+        numbers->addSpacing(18);
+        numbers->addWidget(text("Отправлено","statLabel"));
+        up=text({},"statValue"); numbers->addWidget(up);
+        numbers->addStretch(); body->addWidget(stats);
+        body->addSpacing(18);
+        auto *titleRow=new QHBoxLayout;
+        titleRow->addWidget(text("Серверы","heading")); titleRow->addStretch();
+        add=button("Добавить подписку",titleRow);
         body->addLayout(titleRow);
-        auto *filterRow = new QHBoxLayout;
-        groups = new QComboBox(this);
+        body->addSpacing(11);
+        auto *filterRow=new QHBoxLayout;
+        groups=new ConnectionVisuals::SubscriptionPicker(column);
         groups->setAccessibleName("Подписка");
         groups->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
-        filterRow->addWidget(groups,1);
-        refresh = button("Обновить",filterRow);
-        body->addLayout(filterRow);
-        servers = new QListWidget(this);
+        groups->setMinimumContentsLength(12);
+        groups->setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Fixed);
+        groups->setMaximumWidth(420);
+        filterRow->addWidget(groups);
+        refresh=button({},filterRow);
+        refresh->setFixedSize(34,34); refresh->setAccessibleName("Обновить подписку"); refresh->setToolTip("Обновить подписку");
+        filterRow->addStretch(); body->addLayout(filterRow); body->addSpacing(8);
+        servers=new QListWidget(column);
+        servers->setObjectName("serverEntries");
         servers->setAccessibleName("Серверы");
-        servers->setUniformItemSizes(true);
+        servers->setItemDelegate(new ConnectionVisuals::ServerRows(servers));
+        servers->setFrameShape(QFrame::NoFrame); servers->setMouseTracking(true);
         servers->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        empty = text("Добавь ссылку подписки, чтобы выбрать сервер.", "muted");
-        empty->setAlignment(Qt::AlignCenter);
-        body->addWidget(empty,1);
-        body->addWidget(servers,1);
-        traffic = text({}, "muted");
-        body->addWidget(traffic);
-        settings = new QSettings(QDir::current().absoluteFilePath("desiignerskii-ui.ini"), QSettings::IniFormat, this);
+        servers->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+        servers->setUniformItemSizes(true);
+        body->addWidget(servers);
+        empty=text({},"muted"); empty->setWordWrap(true);
+        body->addWidget(empty);
+        body->addStretch(1);
+        scroll->setWidget(page); outer->addWidget(scroll,1);
+        settings=new QSettings(QDir::current().absoluteFilePath("desiignerskii-ui.ini"),QSettings::IniFormat,this);
+        connect(themeManager(),&ThemeManager::themeChanged,this,[this] { paintHome(); });
         paintHome();
     }
 
     void paintHome() {
-        const bool dark = qApp->palette().color(QPalette::Window).lightness() < 128;
-        const QString bg = dark ? "#191c1b" : "#ffffff";
-        const QString ink = dark ? "#f2f4f2" : "#181a19";
-        const QString muted = dark ? "#b3b9b4" : "#575e5b";
-        const QString well = dark ? "#282c29" : "#f2f4f0";
-        const QString edge = dark ? "#3a403b" : "#e2e5e2";
-        const QString selected = dark ? "#364235" : "#e6f2cf";
-        setStyleSheet(QStringLiteral(
-            "QWidget#connectionHome{background:%1;} #connectionHome QLabel{background:transparent;color:%2;font:14px 'Segoe UI';border:0;}"
-            "#connectionHome QLabel#wordmark{font-size:18px;font-weight:700;} #connectionHome QLabel#state{font-size:32px;font-weight:650;}"
-            "#connectionHome QLabel#heading{font-size:21px;font-weight:650;} #connectionHome QLabel#muted{color:%3;}"
-            "#connectionHome QPushButton,#connectionHome QComboBox{background:%4;color:%2;border:1px solid %5;"
-            "border-radius:9px;padding:8px 13px;font:14px 'Segoe UI';}"
-            "#connectionHome QPushButton:hover{background:%6;} #connectionHome QPushButton:focus,#connectionHome QListWidget:focus,"
-            "#connectionHome QComboBox:focus{border:1px solid #79a348;} #connectionHome QPushButton:disabled{color:%3;}"
-            "#connectionHome QPushButton#power{background:#c1ef71;color:#192416;border:0;padding:12px 24px;font-weight:650;}"
-            "#connectionHome QPushButton#power:disabled{background:%4;color:%3;}"
-            "#connectionHome QListWidget{background:%1;color:%2;border:1px solid %5;border-radius:10px;padding:4px;outline:0;font:15px 'Segoe UI';}"
-            "#connectionHome QListWidget::item{padding:9px 12px;border-radius:6px;} #connectionHome QListWidget::item:selected{background:%6;color:%2;}"
-            "#connectionHome QComboBox QAbstractItemView{background:%1;color:%2;selection-background-color:%6;selection-color:%2;}"
-        ).arg(bg,ink,muted,well,edge,selected));
+        const bool dark=qApp->palette().color(QPalette::Window).lightness()<128;
+        const QString bg=dark?"#181c1a":"#fafbf9", ink=dark?"#eff2ef":"#202622";
+        const QString muted=dark?"#a7b1aa":"#5c6860", line=dark?"#303732":"#e0e5de";
+        const QString well=dark?"#292e2a":"#eaeee9", highlight=dark?"#374339":"#dde8d9";
+        setStyleSheet(QStringLiteral(R"(
+            QWidget#connectionHome, #connectionHome QScrollArea, #connectionHome QScrollArea > QWidget {background:%1;border:0;}
+            #connectionHome QWidget {background:transparent;color:%2;}
+            #connectionHome QWidget#appBar {background:%1;border:0;border-bottom:1px solid %4;}
+            #connectionHome QLabel {border:0;font:14px 'Segoe UI';padding:0;margin:0;}
+            #connectionHome QLabel#wordmark {font-size:17px;font-weight:700;}
+            #connectionHome QLabel#mode {color:#c4d4c3;font-size:13px;font-weight:600;}
+            #connectionHome QLabel#state {color:#fafdf8;font-size:36px;font-weight:650;}
+            #connectionHome QLabel#location {color:#d2dbd2;font-size:15px;}
+            #connectionHome QLabel#heading {font-size:24px;font-weight:650;}
+            #connectionHome QLabel#muted,#connectionHome QLabel#statLabel {color:%3;font-size:13px;}
+            #connectionHome QLabel#statValue {color:%2;font-size:14px;font-weight:600;}
+            #connectionHome QPushButton,#connectionHome QComboBox {background:%5;color:%2;border:1px solid transparent;border-radius:9px;
+                padding:6px 12px;font:13px 'Segoe UI';min-height:19px;}
+            #connectionHome QComboBox {padding:5px 24px 5px 11px;}
+            #connectionHome QComboBox::drop-down {subcontrol-origin:border;subcontrol-position:center right;width:22px;border:0;background:transparent;}
+            #connectionHome QComboBox::down-arrow {image:none;width:0;height:0;}
+            #connectionHome QPushButton::menu-indicator {image:none;width:0;}
+            #connectionHome QPushButton:hover,#connectionHome QComboBox:hover {background:%6;}
+            #connectionHome QPushButton:focus,#connectionHome QComboBox:focus {border:1px solid %3;}
+            #connectionHome QPushButton:disabled {color:%3;}
+            #connectionHome QPushButton#power {background:#d2f793;color:#1c2719;font-weight:650;border-radius:11px;padding:8px 15px;min-height:21px;}
+            #connectionHome QPushButton#power:hover {background:#e1ffb0;}
+            #connectionHome QPushButton#power:focus {border:1px solid white;}
+            #connectionHome QPushButton#power:disabled {background:#414d42;color:#c2cec2;}
+            #connectionHome QListWidget,#connectionHome QListWidget > QWidget {background:transparent;border:0;outline:none;padding:0;margin:0;}
+            #connectionHome QMenu,#connectionHome QComboBox QAbstractItemView {background:%1;color:%2;border:1px solid %4;selection-background-color:%6;selection-color:%2;}
+            #connectionHome QMenu::item:selected {background:%6;color:%2;}
+        )").arg(bg,ink,muted,line,well,highlight));
+        using namespace ConnectionVisuals;
+        power->setIcon(glyphIcon(Glyph::Power,QColor("#1c2719")));
+        preferences->setIcon(glyphIcon(Glyph::Settings,QColor(ink)));
+        add->setIcon(glyphIcon(Glyph::Plus,QColor(ink)));
+        refresh->setIcon(glyphIcon(Glyph::Refresh,QColor(muted)));
+        servers->viewport()->update();
     }
 
     void changeEvent(QEvent *event) override {
@@ -127,6 +183,7 @@ public:
             if (group && !group->archive) groups->addItem(group->name,id);
         }
         groups->setCurrentIndex(qMax(groups->findData(gid), groups->count() ? 0 : -1));
+        groups->setMinimumContentsLength(qBound(12,groups->currentText().size(),32));
         reloadProfiles(selected);
     }
 
@@ -147,7 +204,10 @@ public:
             }
         }
         servers->setCurrentRow(target >= 0 ? target : active >= 0 ? active : 0);
+        servers->setVerticalScrollBarPolicy(servers->count() > 7 ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff);
+        servers->setFixedHeight(qMin(servers->count(), 7)*52);
         servers->setVisible(servers->count() > 0);
+        empty->setText(group && !group->url.isEmpty() ? "В подписке пока нет серверов." : "Добавь подписку, чтобы выбрать сервер.");
         empty->setVisible(servers->count() == 0);
         refresh->setEnabled(group && !group->url.isEmpty());
     }
@@ -165,24 +225,32 @@ public:
         if (cfg->spmode_vpn) modes << "TUN";
         if (cfg->spmode_system_proxy) modes << "Системный прокси";
         if (modes.isEmpty()) modes << "Локальный прокси";
-        QString caption = modes.join(" + ");
-        if (running && profile) caption += "  ·  " + profile->name;
-        detail->setText(caption);
+        mode->setText("Соединение   ·   " + modes.join(" + "));
+        QString location;
+        if (running && profile) location = profile->name;
+        else if (servers->currentItem()) location = servers->currentItem()->text();
+        detail->setToolTip(location);
+        const int labelWidth = qMax(160,int(banner->width()*0.62));
+        detail->setText(detail->fontMetrics().elidedText(location,Qt::ElideRight,labelWidth));
+        banner->setConnected(running);
         const bool switchServer = running && profile && selected >= 0 && profile->id != selected;
         power->setText(switchServer ? "Сменить сервер" : running ? "Отключить" : "Подключить");
         power->setEnabled(!busy && (running || selected >= 0));
-        traffic->setVisible(running && bool(profile));
+        stats->setVisible(running && bool(profile));
         if (profile) {
-            const auto locale = QLocale();
-            traffic->setText("Принято  " + locale.formattedDataSize(profile->traffic_downlink) +
-                             "     Отправлено  " + locale.formattedDataSize(profile->traffic_uplink));
+            const QLocale locale(QLocale::Russian);
+            down->setText(locale.formattedDataSize(profile->traffic_downlink,1));
+            up->setText(locale.formattedDataSize(profile->traffic_uplink,1));
         }
     }
 
+    ConnectionVisuals::Banner *banner;
+    QWidget *stats;
+    QLabel *mode,*down,*up;
     QComboBox *groups;
     QListWidget *servers;
     QPushButton *preferences, *advanced, *power, *add, *refresh;
-    QLabel *state, *detail, *empty, *traffic;
+    QLabel *state, *detail, *empty;
     QSettings *settings;
 
 private:
@@ -195,6 +263,7 @@ private:
 
     QPushButton *button(const QString &name, QHBoxLayout *layout) {
         auto *result = new QPushButton(name,this);
+        result->setCursor(Qt::PointingHandCursor);
         layout->addWidget(result);
         return result;
     }
@@ -206,6 +275,8 @@ void MainWindow::setupConnectionHome() {
     setWindowIcon(QIcon(":/Throne/Throne.png"));
     auto *classic = takeCentralWidget();
     auto *stack = new QStackedWidget(this);
+    stack->setObjectName("clientViews");
+    stack->setStyleSheet("QStackedWidget#clientViews {border:none;padding:0;margin:0;}");
     auto *home = new ConnectionHome(stack);
     stack->addWidget(classic);
     stack->addWidget(home);
@@ -218,10 +289,12 @@ void MainWindow::setupConnectionHome() {
     auto *corner = qobject_cast<QHBoxLayout*>(ui->tabWidget->cornerWidget()->layout());
     if (corner) corner->insertWidget(0,returnButton);
     connect(returnButton,&QPushButton::clicked,toHome,&QAction::trigger);
-    const auto showPage = [stack,home,classic,update](bool advanced) {
+    const auto showPage = [this,stack,home,classic,update](bool advanced) {
+        primaryViewVisible = !advanced;
         stack->setCurrentWidget(advanced ? classic : static_cast<QWidget*>(home));
         home->settings->setValue("view", advanced ? "advanced" : "home");
         home->settings->sync();
+        refresh_status();
         if (!advanced) {
             home->reloadGroups();
             update();
@@ -249,7 +322,10 @@ void MainWindow::setupConnectionHome() {
             Subscription::updater()->RefreshGroup(home->groups->currentData().toInt(),nullptr,Subscription::GroupUpdater::Surface::Report);
     });
     connect(home->groups,&QComboBox::currentIndexChanged,this,[home,update](int index) {
-        if (index >= 0) home->settings->setValue("group",home->groups->currentData());
+        if (index >= 0) {
+            home->settings->setValue("group",home->groups->currentData());
+            home->groups->setMinimumContentsLength(qBound(12,home->groups->currentText().size(),32));
+        }
         home->reloadProfiles();
         update();
     });
