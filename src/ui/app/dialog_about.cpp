@@ -67,7 +67,7 @@ DialogAbout::DialogAbout(QWidget *parent) : QDialog(parent) {
     auto *github = new QPushButton(QStringLiteral("GitHub"), this);
     github->setAutoDefault(false);
     connect(github, &QPushButton::clicked, this, [] {
-        QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/throneproj/Throne")));
+        QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/sorld/desiignerskii-vpn")));
     });
     auto *support = new QPushButton(tr("Support Throne"), this);
     support->setAutoDefault(false);
