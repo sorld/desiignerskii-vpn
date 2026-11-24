@@ -67,4 +67,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create native-v0.6.1 dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Desiignerskii VPN 0.6.1" --notes "Основной экран Desiignerskii VPN открывается по умолчанию. Кнопки «Расширенный вид» и «Основной вид» переключают интерфейс на месте и запоминают выбор."
+          gh release create native-v0.6.2 dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Desiignerskii VPN 0.6.2" --notes "В трее Windows теперь отображается логотип Desiignerskii VPN во всех режимах. В режиме TUN виден фирменный лаймовый знак."
