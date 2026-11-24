@@ -23,8 +23,22 @@ jobs:
         with:
           version: '6.12.0'
           cache: true
+      - name: Restore compiled client
+        id: compiled
+        uses: actions/cache/restore@v4
+        with:
+          path: native-macos-gui.tar
+          key: gui-universal-v1-${{ runner.os }}-${{ runner.arch }}-qt6.12.0-${{ hashFiles('src/**', 'cmake/**', 'CMakeLists.txt', 'include/**', 'core/**', 'res/**', '3rdparty/**') }}
       - name: Build universal application and disk image
+        env:
+          NATIVE_MAC_GUI_ARCHIVE: ${{ github.workspace }}/native-macos-gui.tar
         run: bash script/build-native-macos.sh
+      - name: Save compiled client
+        if: ${{ !cancelled() && steps.compiled.outputs.cache-hit != 'true' && hashFiles('native-macos-gui.tar') != '' }}
+        uses: actions/cache/save@v4
+        with:
+          path: native-macos-gui.tar
+          key: ${{ steps.compiled.outputs.cache-primary-key }}
       - uses: actions/checkout@v4
         with:
           repository: throneproj/Throne-api
@@ -50,7 +64,7 @@ jobs:
           codesign --verify --deep --strict "$app"
           test "$(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist")" = pro.desiignerskii.vpn
           bin="$app/Contents/MacOS/Throne"
-          lipo -verify_arch x86_64 arm64 "$bin"
+          lipo "$bin" -verify_arch x86_64 arm64
           cpus=(x86_64)
           if [[ "$(uname -m)" == arm64 ]]; then cpus+=(arm64); fi
           for cpu in "${cpus[@]}"; do
