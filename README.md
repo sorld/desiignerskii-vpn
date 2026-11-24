@@ -4,9 +4,11 @@
 
 ## Подключение
 
-1. Распакуй архив для Windows и запусти `Desiignerskii VPN.exe`. Для интерфейса нужен Microsoft Edge WebView2 Runtime.
+1. [Скачай установщик для Windows x64](https://github.com/sorld/desiignerskii-vpn/releases/download/desktop-v0.5.1/Desiignerskii-VPN-0.5.1-Setup-x64.exe), запусти его и открой **Desiignerskii VPN** через меню «Пуск». Мастер установит WebView2, если потребуется.
 2. Нажми **Добавить устройство** и вставь персональную ссылку из своего кабинета.
 3. Выбери сервер в списке и нажми **Подключить**. При первом включении TUN Windows может запросить разрешение для сетевого движка.
+
+Для переносного запуска скачай архив **windows-x64.zip** со [страницы релиза](https://github.com/sorld/desiignerskii-vpn/releases/latest) и распакуй его целиком.
 
 ## Сборка из исходников
 
@@ -20,4 +22,4 @@ go test ./...
 
 Скрипт проверит SHA-256 официального архива движка. Готовая программа появится в папке `desktop/desiignerskii/build`.
 
-[Руководство клиента](desktop/desiignerskii/README.ru.md) · [Документация Throne](README.upstream.md) · [Исходный проект Throne](https://github.com/throneproj/Throne) · [Лицензия](LICENSE)
+[Сборка установщика](desktop/desiignerskii/installer/README.ru.md) · [Руководство клиента](desktop/desiignerskii/README.ru.md) · [Документация Throne](README.upstream.md) · [Исходный проект Throne](https://github.com/throneproj/Throne) · [Лицензия](LICENSE)
