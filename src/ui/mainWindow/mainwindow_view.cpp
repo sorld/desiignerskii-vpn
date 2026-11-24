@@ -37,6 +37,7 @@ bool MainWindow::usesTightLabels() const {
 }
 
 void MainWindow::applyTopBarMetrics() {
+    if (primaryViewVisible) return;
     const QList<QToolButton*> menuButtons = {
         ui->toolButton_program, ui->toolButton_preferences, ui->toolButton_testing,
         ui->toolButton_routing, ui->toolButton_tools,

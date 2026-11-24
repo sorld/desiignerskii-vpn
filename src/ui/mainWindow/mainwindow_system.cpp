@@ -9,6 +9,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QMenu>
+#include <QSettings>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QRegularExpression>
@@ -136,10 +137,11 @@ void MainWindow::on_menu_integration_settings_triggered() {
 void MainWindow::saveWindowState() {
     auto* settings = Configs::dataManager->settingsRepo.get();
 
-    settings->mainWindowGeometry = this->saveGeometry().toBase64(QByteArray::Base64Encoding);
-    if (!isMaximized()) {
-        auto news = QString("%1x%2").arg(size().width()).arg(size().height());
-        if (settings->mw_size != news) settings->mw_size = news;
+    QSettings viewSettings(QDir::current().absoluteFilePath("desiignerskii-ui.ini"),QSettings::IniFormat);
+    viewSettings.setValue(primaryViewVisible ? "geometry/home" : "geometry/advanced", saveGeometry());
+    if (!primaryViewVisible) {
+        settings->mainWindowGeometry = saveGeometry().toBase64();
+        if (!isMaximized()) settings->mw_size = QString("%1x%2").arg(width()).arg(height());
     }
     settings->splitter_state = ui->splitter->saveState().toBase64();
 }

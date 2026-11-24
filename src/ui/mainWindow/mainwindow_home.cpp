@@ -1,5 +1,8 @@
 #include "include/ui/mainwindow.h"
 #include "connection_visuals.hpp"
+#include "connection_settings.hpp"
+#include "include/ui/mainWindow/MainWindowInternal.h"
+#include <QScreen>
 #include "include/ui/setting/ThemeManager.hpp"
 
 #include <QScrollArea>
@@ -24,6 +27,17 @@
 
 namespace {
 
+class ViewStack final : public QStackedWidget {
+public:
+    using QStackedWidget::QStackedWidget;
+    QSize minimumSizeHint() const override {
+        return currentWidget() ? currentWidget()->minimumSizeHint() : QSize();
+    }
+    QSize sizeHint() const override {
+        return currentWidget() ? currentWidget()->sizeHint() : QSize();
+    }
+};
+
 class ConnectionHome final : public QWidget {
 public:
     explicit ConnectionHome(QWidget *parent) : QWidget(parent) {
@@ -44,9 +58,11 @@ public:
         auto *mark=new QLabel(head);
         mark->setPixmap(QIcon(":/Throne/Throne.png").pixmap(QSize(30,30),devicePixelRatioF()));
         header->addWidget(mark);
-        header->addWidget(text("Desiignerskii VPN","wordmark")); header->addStretch();
+        wordmark=text("Desiignerskii VPN","wordmark");
+        header->addWidget(wordmark); header->addStretch();
         preferences=button({},header);
-        preferences->setAccessibleName("Настройки"); preferences->setToolTip("Настройки"); preferences->setFixedSize(36,36);
+        preferences->setFixedSize(36,34);
+        preferences->setAccessibleName("Настройки"); preferences->setToolTip("Настройки");
         advanced=button("Расширенный вид",header);
         barLayout->addStretch(); barLayout->addWidget(head,100); barLayout->addStretch();
         outer->addWidget(bar);
@@ -60,7 +76,7 @@ public:
         auto *column=new QWidget(page); column->setMaximumWidth(568);
         alignment->addStretch(); alignment->addWidget(column,100); alignment->addStretch();
         auto *body=new QVBoxLayout(column);
-        body->setContentsMargins(0,24,0,22); body->setSpacing(0);
+        body->setContentsMargins(0,8,0,12); body->setSpacing(0);
         power = new ConnectionVisuals::PowerButton(column);
         body->addWidget(power,0,Qt::AlignHCenter);
         state = text({}, "state");
@@ -71,6 +87,9 @@ public:
         detail->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
         body->addSpacing(5);
         body->addWidget(detail);
+        reconnect = new QPushButton("Переподключить для применения настроек",column);
+        reconnect->hide();
+        body->addWidget(reconnect,0,Qt::AlignHCenter);
         stats=new QWidget(column); auto *numbers=new QHBoxLayout(stats);
         numbers->setContentsMargins(0,8,0,0); numbers->setSpacing(6);
         numbers->addStretch();
@@ -80,7 +99,7 @@ public:
         numbers->addWidget(text("Отправлено","statLabel"));
         up=text({},"statValue"); numbers->addWidget(up);
         numbers->addStretch(); body->addWidget(stats);
-        body->addSpacing(28);
+        body->addSpacing(16);
         auto *titleRow=new QHBoxLayout;
         titleRow->addWidget(text("Серверы","heading")); titleRow->addStretch();
         add=button("Добавить подписку",titleRow);
@@ -154,6 +173,11 @@ public:
         add->setIcon(glyphIcon(Glyph::Plus,QColor(ink)));
         refresh->setIcon(glyphIcon(Glyph::Refresh,QColor(muted)));
         servers->viewport()->update();
+    }
+
+    void resizeEvent(QResizeEvent *event) override {
+        QWidget::resizeEvent(event);
+        wordmark->setVisible(width() >= 455);
     }
 
     void changeEvent(QEvent *event) override {
@@ -244,6 +268,7 @@ public:
         const bool canSwitch = running && profile && selected >= 0 && profile->id != selected;
         switchServer->setVisible(canSwitch);
         power->setEnabled(!busy && (running || selected >= 0));
+        reconnect->setVisible(running && connection->restartPending());
         stats->setVisible(running && bool(profile));
         if (profile) {
             const QLocale locale(QLocale::Russian);
@@ -260,8 +285,8 @@ public:
     QLabel *down,*up;
     QComboBox *groups;
     QListWidget *servers;
-    QPushButton *preferences, *advanced, *switchServer, *add, *refresh;
-    QLabel *state, *detail, *empty;
+    QPushButton *preferences, *reconnect, *advanced, *switchServer, *add, *refresh;
+    QLabel *state, *detail, *empty, *wordmark;
     QSettings *settings;
 
 private:
@@ -285,7 +310,7 @@ private:
 void MainWindow::setupConnectionHome() {
     setWindowIcon(QIcon(":/Throne/Throne.png"));
     auto *classic = takeCentralWidget();
-    auto *stack = new QStackedWidget(this);
+    auto *stack = new ViewStack(this);
     stack->setObjectName("clientViews");
     stack->setStyleSheet("QStackedWidget#clientViews {border:none;padding:0;margin:0;}");
     auto *home = new ConnectionHome(stack);
@@ -301,8 +326,31 @@ void MainWindow::setupConnectionHome() {
     if (corner) corner->insertWidget(0,returnButton);
     connect(returnButton,&QPushButton::clicked,toHome,&QAction::trigger);
     const auto showPage = [this,stack,home,classic,update](bool advanced) {
+        const bool initialized = stack->property("viewReady").toBool();
+        if (initialized && primaryViewVisible == !advanced) return;
+        auto *prefs = home->settings;
+        if (initialized || !prefs->contains("geometry/advanced"))
+            prefs->setValue(primaryViewVisible ? "geometry/home" : "geometry/advanced", saveGeometry());
+        stack->setProperty("viewReady", true);
         primaryViewVisible = !advanced;
         stack->setCurrentWidget(advanced ? classic : static_cast<QWidget*>(home));
+        stack->updateGeometry();
+        if (advanced) {
+            applyTopBarMetrics();
+            restoreGeometry(prefs->value("geometry/advanced").toByteArray());
+        } else {
+            const QRect available = screen()->availableGeometry();
+            setMinimumSize(QSize(400,360).boundedTo(available.size()));
+            if (!restoreGeometry(prefs->value("geometry/home").toByteArray())) {
+                const QPoint center = frameGeometry().intersected(available).isEmpty() ?
+                    available.center() : frameGeometry().intersected(available).center();
+                setWindowState(windowState() & ~(Qt::WindowMaximized | Qt::WindowFullScreen));
+                const QSize compact = QSize(500,528).boundedTo(available.size() - QSize(12,40));
+                resize(compact);
+                move(qBound(available.left(), center.x()-width()/2, qMax(available.left(),available.right()-width())),
+                     qBound(available.top(), center.y()-height()/2, qMax(available.top(),available.bottom()-height()-32)));
+            }
+        }
         home->settings->setValue("view", advanced ? "advanced" : "home");
         home->settings->sync();
         refresh_status();
@@ -313,21 +361,20 @@ void MainWindow::setupConnectionHome() {
     };
     connect(toHome,&QAction::triggered,this,[showPage]{showPage(false);});
     connect(home->advanced,&QPushButton::clicked,this,[showPage]{showPage(true);});
+    connect(home->reconnect,&QPushButton::clicked,connection(),&Engine::ConnectionManager::applyPendingRestart);
+    connect(connection(),&Engine::ConnectionManager::restartReasonsChanged,home,update);
     connect(home->add,&QPushButton::clicked,this,[this]{handle_addsub({},{});});
-    auto *settingsMenu = new QMenu(home);
-    settingsMenu->addAction(ui->menu_spmode_vpn);
-    settingsMenu->addAction(ui->menu_spmode_system_proxy);
-    connect(settingsMenu,&QMenu::aboutToShow,home,[this] {
-        const auto &settings = Configs::dataManager->settingsRepo;
-        ui->menu_spmode_vpn->setChecked(settings->spmode_vpn);
-        ui->menu_spmode_system_proxy->setChecked(settings->spmode_system_proxy);
+    connect(home->preferences,&QPushButton::clicked,this,[this] {
+        if (dialog_is_using) return;
+        setDialogInUse(true);
+        auto *dialog = new ConnectionSettings(this,connection());
+        connect(dialog,&QDialog::finished,this,[this,dialog](int result) {
+            dialog->deleteLater();
+            setDialogInUse(false);
+            if (result == ConnectionSettings::OpenRoutes) on_menu_routing_settings_triggered();
+        });
+        dialog->open();
     });
-    settingsMenu->addSeparator();
-    settingsMenu->addAction(ui->menu_vpn_settings);
-    settingsMenu->addAction(ui->menu_routing_settings);
-    settingsMenu->addAction(ui->menu_manage_groups);
-    settingsMenu->addAction(ui->menu_basic_settings);
-    home->preferences->setMenu(settingsMenu);
     connect(home->refresh,&QPushButton::clicked,this,[home] {
         if (home->groups->currentIndex() >= 0)
             Subscription::updater()->RefreshGroup(home->groups->currentData().toInt(),nullptr,Subscription::GroupUpdater::Surface::Report);
