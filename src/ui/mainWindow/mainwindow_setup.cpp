@@ -10,6 +10,8 @@
 #include "include/engine/tests/TestRunner.h"
 
 #include <QMenu>
+#include <QHBoxLayout>
+#include <QPushButton>
 
 #include "include/configs/sub/GroupUpdater.hpp"
 #include "include/configs/sub/RouteUpdater.hpp"
@@ -285,7 +287,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(btnFilter, &QToolButton::toggled, static_cast<ProfilesTableFilterHeader*>(ui->profilesTableView->horizontalHeader()), &ProfilesTableFilterHeader::setFiltersVisible);
     connect(static_cast<ProfilesTableFilterHeader*>(ui->profilesTableView->horizontalHeader()), &ProfilesTableFilterHeader::closeRequested,
             btnFilter, [btnFilter] { btnFilter->setChecked(false); });
-    ui->tabWidget->setCornerWidget(btnFilter, Qt::TopRightCorner);
+    auto *groupTools = new QWidget(ui->tabWidget);
+    auto *groupLayout = new QHBoxLayout(groupTools);
+    groupLayout->setContentsMargins(0, 0, 0, 0);
+    auto *subscribe = new QPushButton(tr("Add subscription"), groupTools);
+    subscribe->setObjectName(QStringLiteral("addSubscription"));
+    subscribe->setAutoDefault(false);
+    connect(subscribe, &QPushButton::clicked, this, [this] { handle_addsub({}, {}); });
+    groupLayout->addWidget(subscribe);
+    groupLayout->addWidget(btnFilter);
+    ui->tabWidget->setCornerWidget(groupTools, Qt::TopRightCorner);
     RegisterHotkey(false);
     auto last_size = Configs::dataManager->settingsRepo->mw_size.split("x");
     if (last_size.length() == 2) {

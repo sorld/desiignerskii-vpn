@@ -439,7 +439,7 @@ void MainWindow::CheckUpdate() {
     // Releases carry no checksum or signature, so TLS is all that vouches for the download URL and the archive.
     HttpGetOptions options;
     options.strictTls = true;
-    auto resp = NetworkRequestHelper::HttpGet("https://api.github.com/repos/throneproj/Throne/releases", options);
+    auto resp = NetworkRequestHelper::HttpGet("https://api.github.com/repos/sorld/desiignerskii-vpn/releases", options);
     if (!resp.error.isEmpty()) {
         runOnUiThread([=,this] {
             MessageBoxWarning(QObject::tr("Update"), QObject::tr("Requesting update error: %1").arg(resp.error + "\n" + resp.data));
@@ -452,6 +452,7 @@ void MainWindow::CheckUpdate() {
     QJsonArray array = QString2QJsonArray(resp.data);
     for (const QJsonValue value : array) {
         QJsonObject release = value.toObject();
+        if (!release["tag_name"].toString().startsWith(QStringLiteral("native-v"))) continue;
         if (release["prerelease"].toBool() && !Configs::dataManager->settingsRepo->allow_beta_update) continue;
         for (const QJsonValue asset : release["assets"].toArray()) {
             if (asset["name"].toString().contains(search) && asset["name"].toString().section('.', -1) == QString("zip")) {
@@ -465,7 +466,7 @@ void MainWindow::CheckUpdate() {
         if (!release_download_url.isEmpty()) break;
     }
 
-    if (release_download_url.isEmpty() || !isNewer(release_tag)) {
+    if (release_download_url.isEmpty() || !isNewer(release_tag.mid(QStringLiteral("native-v").size()))) {
         runOnUiThread([=,this] {
             MessageBoxInfo(QObject::tr("Update"), QObject::tr("No update"));
         });
@@ -474,9 +475,9 @@ void MainWindow::CheckUpdate() {
 
     options.headers = {{"Accept", "application/vnd.github.raw+json"}};
     const auto changelog = NetworkRequestHelper::HttpGet(
-        QStringLiteral("https://api.github.com/repos/throneproj/Throne/contents/CHANGELOG.md?ref=") +
+        QStringLiteral("https://api.github.com/repos/sorld/desiignerskii-vpn/contents/CHANGELOG.md?ref=") +
             QString::fromLatin1(QUrl::toPercentEncoding(release_tag)), options);
-    const auto notes = changelog.error.isEmpty() ? releaseNotes(QString::fromUtf8(changelog.data), release_tag) : QString();
+    const auto notes = changelog.error.isEmpty() ? releaseNotes(QString::fromUtf8(changelog.data), release_tag.mid(QStringLiteral("native-v").size())) : QString();
 
     runOnUiThread([=,this] {
         const auto headless = Sys::HostPresence::OtherHeadless();

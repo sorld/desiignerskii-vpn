@@ -4,6 +4,15 @@
 #include <utility>
 
 #include <QBuffer>
+#include <QCheckBox>
+#include <QDialogButtonBox>
+#include <QFormLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QRegularExpression>
+#include <QVBoxLayout>
+#include "include/engine/services/GroupService.h"
 #include <QFileInfo>
 #include <QImageReader>
 #include <QInputDialog>
@@ -229,28 +238,82 @@ void MainWindow::handle_add_remote_routes(const QString &url) {
 }
 
 void MainWindow::handle_addsub(const QString &url, const QString &name) {
-    if (url.isEmpty()) {
-        MessageBoxWarning(tr("Add subscription"), tr("The link did not contain a subscription URL."));
-        return;
-    }
-
-    ActivateWindow(this);
-
-    const QString groupName = FIRST_OR_SECOND(name, QUrl(url).host());
-    const auto prompt = tr("Add this subscription?\n\nName: %1\nURL: %2")
-                            .arg(groupName, url);
-    bool autoUpdate = true;
-    if (MessageBoxCheck(tr("Add subscription"), prompt, tr("Auto update"), autoUpdate) != QMessageBox::Ok) {
-        return;
-    }
-
-    auto group = Configs::GroupsRepo::NewGroup();
-    group->name = groupName;
-    group->url = url;
-    group->skip_auto_update = !autoUpdate;
-    Configs::dataManager->groupsRepo->AddGroup(group);
-    Engine::EngineEvents::SubscriptionNewGroup(group->id);
-    Subscription::updater()->RefreshGroup(group->id, nullptr, Subscription::GroupUpdater::Surface::Report);
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Add subscription"));
+    dialog.setMinimumWidth(390);
+    auto *layout = new QVBoxLayout(&dialog);
+    auto *form = new QFormLayout;
+    auto *address = new QLineEdit(url, &dialog);
+    address->setObjectName(QStringLiteral("subscriptionUrl"));
+    address->setPlaceholderText(QStringLiteral("https://"));
+    address->setClearButtonEnabled(true);
+    auto *label = new QLineEdit(name, &dialog);
+    label->setPlaceholderText(tr("Provider name (optional)"));
+    form->addRow(tr("Subscription URL"), address);
+    form->addRow(tr("Name"), label);
+    layout->addLayout(form);
+    auto *automatic = new QCheckBox(tr("Auto update"), &dialog);
+    automatic->setChecked(true);
+    layout->addWidget(automatic);
+    auto *errorLabel = new QLabel(&dialog);
+    errorLabel->setTextFormat(Qt::PlainText);
+    errorLabel->setWordWrap(true);
+    errorLabel->hide();
+    layout->addWidget(errorLabel);
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    auto *add = buttons->button(QDialogButtonBox::Ok);
+    add->setText(tr("Add subscription"));
+    add->setDefault(true);
+    add->setEnabled(!url.trimmed().isEmpty());
+    layout->addWidget(buttons);
+    connect(address, &QLineEdit::textChanged, &dialog, [=](const QString &text) {
+        errorLabel->hide();
+        add->setEnabled(!text.trimmed().isEmpty());
+    });
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, [&, this] {
+        const QString original = address->text().trimmed();
+        QUrl parsed(original, QUrl::StrictMode);
+        if (!parsed.isValid() || parsed.host().isEmpty() ||
+            (parsed.scheme() != QStringLiteral("http") && parsed.scheme() != QStringLiteral("https"))) {
+            errorLabel->setText(tr("Enter an http or https subscription URL."));
+            errorLabel->show();
+            address->setFocus();
+            return;
+        }
+        // The cabinet's join page is HTML. Only its exact device path maps to a feed.
+        QString feed = original;
+        static const QRegularExpression join(QStringLiteral("^/join/([A-Za-z0-9_-]{43})$"));
+        const auto match = join.match(parsed.path(QUrl::FullyEncoded));
+        if (parsed.scheme() == QStringLiteral("https") && parsed.authority().compare(
+                QStringLiteral("desiignerskii.pro"), Qt::CaseInsensitive) == 0 && match.hasMatch()) {
+            feed = QStringLiteral("https://desiignerskii.pro/s/") + match.captured(1);
+        }
+        for (const int gid : Configs::dataManager->groupsRepo->GetAllGroupIds()) {
+            const auto group = Configs::dataManager->groupsRepo->GetGroup(gid);
+            if (group && group->url == feed) {
+                errorLabel->setText(tr("This subscription already exists in %1.").arg(group->name));
+                errorLabel->show();
+                return;
+            }
+        }
+        Engine::GroupService::NewGroup spec;
+        spec.name = label->text().trimmed();
+        if (spec.name.isEmpty()) spec.name = parsed.host();
+        spec.url = feed;
+        spec.autoUpdate = automatic->isChecked();
+        int gid = -1;
+        if (const auto failure = Engine::GroupService::Add(spec, &gid)) {
+            errorLabel->setText(failure->message);
+            errorLabel->show();
+            return;
+        }
+        Engine::EngineEvents::SubscriptionNewGroup(gid);
+        Subscription::updater()->RefreshGroup(gid, nullptr, Subscription::GroupUpdater::Surface::Report);
+        dialog.accept();
+    });
+    address->setFocus();
+    dialog.exec();
 }
 
 void MainWindow::import_or_handle_deeplink(const QString &text) {
@@ -271,14 +334,14 @@ void MainWindow::import_text(const QString &text) {
         };
         bool ok = false;
         const auto choice = QInputDialog::getItem(nullptr, QObject::tr("url detected"),
-                                                  QObject::tr("%1\nHow to update?").arg(content), items, 0, false, &ok);
+                                                  QObject::tr("%1\nHow to update?").arg(content), items, 1, false, &ok);
         if (!ok) return;
         switch (items.indexOf(choice)) {
             case 0:
                 Subscription::updater()->ImportUrl(content);
                 return;
             case 1:
-                Subscription::updater()->SubscribeUrl(content);
+                handle_addsub(content, {});
                 return;
             default:
                 break;
