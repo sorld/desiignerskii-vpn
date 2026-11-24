@@ -177,10 +177,21 @@ public:
             ? groups->currentData().toInt() : settings->value("group",Configs::dataManager->settingsRepo->current_group).toInt();
         QSignalBlocker blocker(groups);
         const int selected = selectedId();
+        const bool initialGroup = preferredGroup < 0 && groups->currentIndex() < 0 && !settings->contains("group");
         groups->clear();
         for (int id : Configs::dataManager->groupsRepo->GetGroupsTabOrder()) {
             const auto group = Configs::dataManager->groupsRepo->GetGroup(id);
             if (group && !group->archive) groups->addItem(group->name,id);
+        }
+        const auto current = Configs::dataManager->groupsRepo->GetGroup(gid);
+        if (initialGroup && (!current || current->Profiles().isEmpty())) {
+            for (int index = 0; index < groups->count(); ++index) {
+                const auto candidate = Configs::dataManager->groupsRepo->GetGroup(groups->itemData(index).toInt());
+                if (candidate && !candidate->Profiles().isEmpty()) {
+                    gid = candidate->id;
+                    break;
+                }
+            }
         }
         groups->setCurrentIndex(qMax(groups->findData(gid), groups->count() ? 0 : -1));
         groups->setMinimumContentsLength(qBound(12,groups->currentText().size(),32));
@@ -239,8 +250,11 @@ public:
         stats->setVisible(running && bool(profile));
         if (profile) {
             const QLocale locale(QLocale::Russian);
-            down->setText(locale.formattedDataSize(profile->traffic_downlink,1));
-            up->setText(locale.formattedDataSize(profile->traffic_uplink,1));
+            const auto size = [&locale](qint64 bytes) {
+                return bytes < 1024 ? locale.toString(bytes) + " Б" : locale.formattedDataSize(bytes,1);
+            };
+            down->setText(size(profile->traffic_downlink));
+            up->setText(size(profile->traffic_uplink));
         }
     }
 
