@@ -4,7 +4,7 @@ permissions:
   contents: read
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +41,7 @@ jobs:
           ditto "$volume/Desiignerskii VPN.app" "$app"
           hdiutil detach "$volume"
           codesign --verify --deep --strict "$app"
+          test "$(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist")" = pro.desiignerskii.vpn
           bin="$app/Contents/MacOS/Throne"
           for cpu in arm64 x86_64; do
             /usr/bin/arch -"$cpu" "$bin" --headless --version | grep -F '0.6.5'
