@@ -534,6 +534,7 @@ private:
 
     void setupConnectionList();
 
+    bool primaryViewVisible = false;
     void setupConnectionHome();
     void setupTrafficGraph();
 
