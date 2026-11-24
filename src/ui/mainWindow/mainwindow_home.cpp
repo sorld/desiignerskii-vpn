@@ -62,7 +62,8 @@ public:
         header->addWidget(wordmark); header->addStretch();
         preferences=button({},header);
         preferences->setFixedSize(36,34);
-        preferences->setAccessibleName("Настройки"); preferences->setToolTip("Настройки");
+        preferences->setObjectName("connectionPreferencesButton");
+        preferences->setAccessibleName("Настройки клиента"); preferences->setToolTip("Настройки");
         advanced=button("Расширенный вид",header);
         barLayout->addStretch(); barLayout->addWidget(head,100); barLayout->addStretch();
         outer->addWidget(bar);
