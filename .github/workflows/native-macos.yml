@@ -1,10 +1,17 @@
 name: Native macOS client
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        type: choice
+        description: macOS build host
+        options: [macos-26, macos-15-intel]
+        default: macos-26
 permissions:
   contents: read
 jobs:
   build:
-    runs-on: macos-26
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +50,10 @@ jobs:
           codesign --verify --deep --strict "$app"
           test "$(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist")" = pro.desiignerskii.vpn
           bin="$app/Contents/MacOS/Throne"
-          for cpu in arm64 x86_64; do
+          lipo -verify_arch x86_64 arm64 "$bin"
+          cpus=(x86_64)
+          if [[ "$(uname -m)" == arm64 ]]; then cpus+=(arm64); fi
+          for cpu in "${cpus[@]}"; do
             /usr/bin/arch -"$cpu" "$bin" --headless --version | grep -F '0.6.5'
           done
           python3 script/ci/native_subscriptions.py "$bin" "$RUNNER_TEMP/thronectl"
@@ -61,6 +71,7 @@ jobs:
           compression-level: 0
   publish:
     needs: build
+    concurrency: macos-disk-image-publish
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -71,4 +82,9 @@ jobs:
           path: dist
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload native-v0.6.5 dist/*.dmg --repo "$GITHUB_REPOSITORY"
+        run: |
+          image=dist/Desiignerskii-VPN-0.6.5-macOS.dmg
+          existing=$(gh release view native-v0.6.5 --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+          if ! grep -Fxq "$(basename "$image")" <<< "$existing"; then
+            gh release upload native-v0.6.5 "$image" --repo "$GITHUB_REPOSITORY"
+          fi
