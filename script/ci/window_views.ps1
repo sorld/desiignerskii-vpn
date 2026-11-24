@@ -27,10 +27,36 @@ function Assert-ViewSaved([string]$Mode) {
     }
 }
 Assert-ViewSaved 'home'
+$windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($Window)
+$homeWidth = $windowElement.Current.BoundingRectangle.Width
+Invoke-ViewButton 'Настройки'
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class ConnectionPrefsWindows {
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+    public static extern IntPtr FindWindow(string className, string windowName);
+}
+'@
+$dialogHandle = [IntPtr]::Zero
+for ($i=0; $i -lt 50 -and $dialogHandle -eq [IntPtr]::Zero; $i++) {
+    $dialogHandle = [ConnectionPrefsWindows]::FindWindow($null, 'Настройки · Desiignerskii VPN')
+    if ($dialogHandle -eq [IntPtr]::Zero) { Start-Sleep -Milliseconds 100 }
+}
+if ($dialogHandle -eq [IntPtr]::Zero) { throw 'Settings window did not open' }
+$dialog = [System.Windows.Automation.AutomationElement]::FromHandle($dialogHandle)
+$sectionList = $dialog.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
+    [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty, 'Разделы настроек'))
+if (!$sectionList) { throw 'Settings navigation missing' }
+$cancel = $dialog.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
+    [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty, 'Отмена'))
+$cancel.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
 Invoke-ViewButton 'Расширенный вид'
 $null = Get-ViewButton 'Основной вид'
 Assert-ViewSaved 'advanced'
+if ($windowElement.Current.BoundingRectangle.Width -lt $homeWidth * 1.25) { throw 'Primary window inherits advanced width' }
 Invoke-ViewButton 'Основной вид'
 $null = Get-ViewButton 'Расширенный вид'
 Assert-ViewSaved 'home'
+if ([Math]::Abs($windowElement.Current.BoundingRectangle.Width - $homeWidth) -gt 4) { throw 'Home size not restored' }
 Write-Host 'PASS: default home, visible buttons in both directions, saved view, same native window.'
