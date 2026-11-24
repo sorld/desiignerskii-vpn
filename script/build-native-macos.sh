@@ -31,6 +31,8 @@ lipo -create "$work/core-amd64" "$work/core-arm64" -output "$bin/ThroneCore"
 chmod 755 "$bin/ThroneCore"
 macdeployqt "$app" -always-overwrite -verbose=1
 plist="$app/Contents/Info.plist"
+plutil -replace CFBundleIdentifier -string pro.desiignerskii.vpn "$plist"
+plutil -replace CFBundleURLTypes.0.CFBundleURLName -string pro.desiignerskii.vpn "$plist"
 for key in CFBundleName CFBundleDisplayName; do
     /usr/libexec/PlistBuddy -c "Set :$key Desiignerskii VPN" "$plist" 2>/dev/null ||
         /usr/libexec/PlistBuddy -c "Add :$key string Desiignerskii VPN" "$plist"
