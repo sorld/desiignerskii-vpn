@@ -67,4 +67,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create native-v0.6.4 dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Desiignerskii VPN 0.6.4" --notes "Большая круглая кнопка в центре включает и выключает VPN. Под кнопкой видны состояние, сервер и режим. Для смены работающего сервера выбери другой в списке и нажми «Сменить сервер»."
+          gh release create native-v0.6.5 dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Desiignerskii VPN 0.6.5" --notes "Компактное окно подключения с отдельной геометрией для каждого вида. Иконка в трее меняет цвет целиком. В основном виде доступны настройки туннеля, DNS, маршрутов, подписок, приложения и диагностики."
