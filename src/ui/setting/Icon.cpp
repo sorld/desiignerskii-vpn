@@ -25,23 +25,29 @@ namespace {
     }
 
     QIcon bundledIcon(Icon::TrayIconStatus status) {
-        QPixmap logo(QStringLiteral(":/Throne/Throne.png"));
-        QColor indicator;
+        const QImage mark(QStringLiteral(":/Throne/Throne.png"));
+        if (status == Icon::TrayIconStatus::Vpn) return QIcon(QPixmap::fromImage(mark));
+        QColor fill;
         switch (status) {
-            case Icon::TrayIconStatus::None:        indicator = QColor(0xb3, 0xb8, 0xb0); break;
-            case Icon::TrayIconStatus::Connecting:  indicator = QColor(0xff, 0xc3, 0x46); break;
-            case Icon::TrayIconStatus::Running:     indicator = QColor(0x6e, 0xd8, 0x99); break;
-            case Icon::TrayIconStatus::SystemProxy: indicator = QColor(0x79, 0xc9, 0xff); break;
-            case Icon::TrayIconStatus::Vpn:         return QIcon(logo);
+            case Icon::TrayIconStatus::None:        fill = QColor("#a6a9ad"); break;
+            case Icon::TrayIconStatus::Connecting:  fill = QColor("#ffc34d"); break;
+            case Icon::TrayIconStatus::Running:     fill = QColor("#70daa1"); break;
+            case Icon::TrayIconStatus::SystemProxy: fill = QColor("#81caff"); break;
+            case Icon::TrayIconStatus::Vpn:         break;
         }
-        QPainter painter(&logo);
-        painter.setRenderHint(QPainter::Antialiasing);
-        painter.setWindow(0, 0, 32, 32);
-        painter.setPen(QPen(QColor(0x20, 0x25, 0x1f), 1.4));
-        painter.setBrush(indicator);
-        painter.drawEllipse(QPointF(25.7, 25.5), 4.5, 4.5);
-        painter.end();
-        return QIcon(logo);
+        QImage tinted = mark.convertToFormat(QImage::Format_ARGB32);
+        for (int y=0; y<tinted.height(); ++y) {
+            auto *line = reinterpret_cast<QRgb *>(tinted.scanLine(y));
+            for (int x=0; x<tinted.width(); ++x) {
+                const QRgb pixel = line[x];
+                // Green-channel coverage separates the lime face from the two dark strokes.
+                const qreal weight = qBound(0.0,(qGreen(pixel)-37)/209.0,1.0);
+                const auto blend = [weight](int dark,int light) { return qRound(dark+(light-dark)*weight); };
+                if (qAlpha(pixel)) line[x]=qRgba(blend(32,fill.red()),blend(37,fill.green()),
+                                                blend(31,fill.blue()),qAlpha(pixel));
+            }
+        }
+        return QIcon(QPixmap::fromImage(tinted));
     }
 
     QIcon loadNamedIcon(Icon::TrayIconStatus status, bool useCustom) {
